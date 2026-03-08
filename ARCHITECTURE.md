@@ -50,20 +50,6 @@ Provides the data layer and admin interface for managing documentation categorie
 - **View count with F() expression** — `increment_view()` uses `F('view_count') + 1` to avoid race conditions under concurrent traffic.
 - **Auto-publish timestamp** — Setting `status='published'` automatically populates `published_at` via the `save()` override.
 
-### File Index — Backend
-
-| File Path | Purpose |
-|---|---|
-| `docs/__init__.py` | Python package initializer. Empty by design. |
-| `docs/apps.py` | Django AppConfig. Registers the app as `docs` with verbose name "Documentation & Blog". |
-| `docs/models.py` | **Core data models.** `Category` (tree structure with parent FK, slug, icon, sort_order) and `Article` (Markdown content, status, pinned, SEO fields, view count). Contains `full_path` property, `article_count` property, and `increment_view()` method. |
-| `docs/serializers.py` | **DRF serializers.** `CategorySerializer` (flat), `CategoryTreeSerializer` (recursive with nested children + article list), `ArticleListSerializer` (lightweight, no content), `ArticleDetailSerializer` (full content + prev/next navigation). |
-| `docs/views.py` | **API views.** `CategoryTreeView` (GET tree), `CategoryListView` (GET flat list), `ArticleListView` (GET with category/pinned filters), `ArticleDetailView` (GET by slug, increments views), `ArticleSearchView` (GET with keyword search across title/summary/content). |
-| `docs/urls.py` | **URL routing.** Maps 5 endpoints under the `docs` namespace. Critical: `search/` route is defined before `<slug:slug>/` to prevent "search" being captured as a slug. |
-| `docs/admin.py` | **Admin configuration.** `CategoryAdmin` with inline sort editing, `ArticleAdmin` with bulk publish/unpublish actions, auto-author assignment, SEO fieldset (collapsed), prepopulated slugs. |
-| `suifly/settings.py` | **Modified.** Added `'docs'` to `INSTALLED_APPS`. |
-| `suifly/urls.py` | **Modified.** Added `path('api/docs/', include('docs.urls'))`. Also fixed `debug_view` to return 403 in production. |
-
 ### Database Tables
 
 | Table | Key Columns | Notes |

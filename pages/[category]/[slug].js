@@ -4,6 +4,9 @@
  * ============================================
  * Creation Reason: Article detail page with full Markdown rendering
  * Modification Reason:
+ *   v1.1.1 - Stabilized TOC memoization and removed article-level
+ *   framer-motion wrapper to prevent client-side route cancellation /
+ *   removeChild crashes during markdown page navigation.
  *   v1.1.0 - Pass SiteConfig into Layout for admin-controlled SEO/header.
  *   v1.0.1 - Added reading progress bar, fixed prev/next
  *   links to use correct category slug from article data instead of URL param
@@ -20,7 +23,6 @@
  * Dependencies:
  *   - lib/api.js (fetchSiteConfig, fetchArticleBySlug, fetchCategoryTree)
  *   - components/Layout.js, components/MarkdownRenderer.js
- *   - framer-motion (entrance animation)
  *   - lucide-react (icons)
  *
  * ⚠️ Important Note for Next Developer:
@@ -30,14 +32,13 @@
  * - BUG FIX: prev/next links now use article.category_slug (from API)
  *   instead of the URL categorySlug param, since articles might change category
  *
- * Last Modified: v1.1.0 - SiteConfig support
+ * Last Modified: v1.1.1 - Stable article DOM during client navigation
  * ============================================
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { motion } from 'framer-motion';
 import { Clock, Eye, User, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 import Layout from '../../components/Layout';
 import MarkdownRenderer, { extractTOC } from '../../components/MarkdownRenderer';
@@ -62,8 +63,13 @@ export default function ArticlePage({ siteConfig, categoryTree, article, categor
   const [activeHeading, setActiveHeading] = useState('');
   const [readProgress, setReadProgress] = useState(0);
 
-  // Extract TOC from markdown
-  const toc = article?.content ? extractTOC(article.content) : [];
+  // Extract TOC from markdown.
+  // Keep the array stable so scroll progress renders do not recreate the
+  // IntersectionObserver tree while the markdown DOM is still settling.
+  const toc = useMemo(
+    () => (article?.content ? extractTOC(article.content) : []),
+    [article?.content]
+  );
   const readTime = article?.content ? estimateReadTime(article.content) : 0;
 
   // Reading progress bar
@@ -154,10 +160,7 @@ export default function ArticlePage({ siteConfig, categoryTree, article, categor
 
       <div className="flex">
         {/* ===== Article content ===== */}
-        <motion.article
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
+        <article
           className="flex-1 min-w-0 max-w-3xl mx-auto px-6 py-10 lg:py-12"
         >
           {/* Breadcrumb */}
@@ -287,7 +290,7 @@ export default function ArticlePage({ siteConfig, categoryTree, article, categor
               )}
             </div>
           </nav>
-        </motion.article>
+        </article>
 
         {/* ===== Right sidebar: Table of Contents (desktop only) ===== */}
         {toc.length > 0 && (

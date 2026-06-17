@@ -3,7 +3,10 @@
  * File: docs-frontend/components/Layout.js
  * ============================================
  * Creation Reason: Wraps all pages with Header, Sidebar, and SearchModal
- * Modification Reason: v1.0.1 - Added max-width constraint for ultra-wide
+ * Modification Reason:
+ *   v1.1.0 - Accept siteConfig from Django docs admin for SEO site name,
+ *     default description, and header external link.
+ *   v1.0.1 - Added max-width constraint for ultra-wide
  *   screens, improved SEO meta tags, canonical URL support
  *
  * Main Functionality:
@@ -14,8 +17,8 @@
  *   - SEO head tags with OG and Twitter cards
  *
  * Main Logical Flow:
- *   1. Layout receives categoryTree from page-level getServerSideProps
- *   2. Passes tree to Sidebar and SearchModal
+ *   1. Layout receives categoryTree + siteConfig from page-level getServerSideProps
+ *   2. Passes tree/config to Sidebar, Header, and SearchModal
  *   3. Manages mobile sidebar open/close state
  *   4. Manages search modal open/close state
  *
@@ -24,11 +27,11 @@
  *   - next/head
  *
  * ⚠️ Important Note for Next Developer:
- * - categoryTree is fetched at page level and passed down
- * - Each page must pass categoryTree as a prop to Layout
+ * - categoryTree and siteConfig are fetched at page level and passed down
+ * - Each page should pass categoryTree and siteConfig as props to Layout
  * - Layout does NOT fetch data itself
  *
- * Last Modified: v1.0.1 - Max-width + SEO improvements
+ * Last Modified: v1.1.0 - Admin-controlled site config support
  * ============================================
  */
 
@@ -41,6 +44,7 @@ import SearchModal from './SearchModal';
 export default function Layout({
   children,
   categoryTree = [],
+  siteConfig = null,
   title = 'AeroNyx Docs',
   description = 'AeroNyx Network — Documentation, guides, and technical references.',
   meta = {},
@@ -53,26 +57,30 @@ export default function Layout({
   const handleOpenSearch = useCallback(() => setSearchOpen(true), []);
   const handleCloseSearch = useCallback(() => setSearchOpen(false), []);
 
-  const fullTitle = title === 'AeroNyx Docs' ? title : `${title} — AeroNyx Docs`;
+  const siteName = siteConfig?.site_name || 'AeroNyx Docs';
+  const defaultDescription = siteConfig?.seo_description || description;
+  const fullTitle = title === siteName || title === 'AeroNyx Docs' ? siteName : `${title} — ${siteName}`;
 
   return (
     <>
       <Head>
         <title>{fullTitle}</title>
-        <meta name="description" content={description} />
-        {meta.keywords && <meta name="keywords" content={meta.keywords} />}
+        <meta name="description" content={description || defaultDescription} />
+        {(meta.keywords || siteConfig?.seo_keywords) && (
+          <meta name="keywords" content={meta.keywords || siteConfig.seo_keywords} />
+        )}
 
         {/* Open Graph */}
         <meta property="og:title" content={fullTitle} />
-        <meta property="og:description" content={description} />
+        <meta property="og:description" content={description || defaultDescription} />
         <meta property="og:type" content="article" />
-        <meta property="og:site_name" content="AeroNyx Docs" />
+        <meta property="og:site_name" content={siteName} />
         {meta.image && <meta property="og:image" content={meta.image} />}
 
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={fullTitle} />
-        <meta name="twitter:description" content={description} />
+        <meta name="twitter:description" content={description || defaultDescription} />
         {meta.image && <meta name="twitter:image" content={meta.image} />}
       </Head>
 
@@ -80,6 +88,7 @@ export default function Layout({
       <Header
         onToggleSidebar={handleToggleSidebar}
         onOpenSearch={handleOpenSearch}
+        siteConfig={siteConfig}
       />
 
       {/* Body: Sidebar + Content */}

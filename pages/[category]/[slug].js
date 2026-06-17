@@ -3,7 +3,9 @@
  * File: docs-frontend/pages/[category]/[slug].js
  * ============================================
  * Creation Reason: Article detail page with full Markdown rendering
- * Modification Reason: v1.0.1 - Added reading progress bar, fixed prev/next
+ * Modification Reason:
+ *   v1.1.0 - Pass SiteConfig into Layout for admin-controlled SEO/header.
+ *   v1.0.1 - Added reading progress bar, fixed prev/next
  *   links to use correct category slug from article data instead of URL param
  *   (BUG: if article moved categories, links would 404). Improved TOC
  *   active state tracking. Added estimated reading time.
@@ -16,7 +18,7 @@
  *   5. TOC highlights active heading via IntersectionObserver
  *
  * Dependencies:
- *   - lib/api.js (fetchArticleBySlug, fetchCategoryTree)
+ *   - lib/api.js (fetchSiteConfig, fetchArticleBySlug, fetchCategoryTree)
  *   - components/Layout.js, components/MarkdownRenderer.js
  *   - framer-motion (entrance animation)
  *   - lucide-react (icons)
@@ -28,7 +30,7 @@
  * - BUG FIX: prev/next links now use article.category_slug (from API)
  *   instead of the URL categorySlug param, since articles might change category
  *
- * Last Modified: v1.0.1 - Progress bar + link fix + reading time
+ * Last Modified: v1.1.0 - SiteConfig support
  * ============================================
  */
 
@@ -39,7 +41,7 @@ import { motion } from 'framer-motion';
 import { Clock, Eye, User, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 import Layout from '../../components/Layout';
 import MarkdownRenderer, { extractTOC } from '../../components/MarkdownRenderer';
-import { fetchArticleBySlug, fetchCategoryTree } from '../../lib/api';
+import { fetchSiteConfig, fetchArticleBySlug, fetchCategoryTree } from '../../lib/api';
 
 // ============================================
 // Estimated reading time utility
@@ -55,7 +57,7 @@ function estimateReadTime(content) {
 // Main Component
 // ============================================
 
-export default function ArticlePage({ categoryTree, article, categorySlug }) {
+export default function ArticlePage({ siteConfig, categoryTree, article, categorySlug }) {
   const router = useRouter();
   const [activeHeading, setActiveHeading] = useState('');
   const [readProgress, setReadProgress] = useState(0);
@@ -110,7 +112,7 @@ export default function ArticlePage({ categoryTree, article, categorySlug }) {
   // 404 state
   if (router.isFallback || !article) {
     return (
-      <Layout categoryTree={categoryTree}>
+      <Layout categoryTree={categoryTree} siteConfig={siteConfig}>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-center">
@@ -132,6 +134,7 @@ export default function ArticlePage({ categoryTree, article, categorySlug }) {
   return (
     <Layout
       categoryTree={categoryTree}
+      siteConfig={siteConfig}
       title={article.meta_title || article.title}
       description={article.meta_description || article.summary}
       meta={{
@@ -329,7 +332,8 @@ export default function ArticlePage({ categoryTree, article, categorySlug }) {
 export async function getServerSideProps(context) {
   const { category: categorySlug, slug } = context.params;
 
-  const [categoryTree, article] = await Promise.all([
+  const [siteConfig, categoryTree, article] = await Promise.all([
+    fetchSiteConfig(),
     fetchCategoryTree(),
     fetchArticleBySlug(slug),
   ]);
@@ -341,6 +345,7 @@ export async function getServerSideProps(context) {
   return {
     props: {
       categoryTree: categoryTree || [],
+      siteConfig: siteConfig || null,
       article,
       categorySlug,
     },

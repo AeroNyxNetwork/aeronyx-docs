@@ -3,7 +3,9 @@
  * File: docs-frontend/pages/[category]/index.js
  * ============================================
  * Creation Reason: Category page showing article list for a given category
- * Modification Reason: v1.0.1 - Added file path in header, improved loading
+ * Modification Reason:
+ *   v1.1.0 - Pass SiteConfig into Layout for admin-controlled SEO/header.
+ *   v1.0.1 - Added file path in header, improved loading
  *   state, better empty state design, article count in header
  *
  * Main Logical Flow:
@@ -12,7 +14,7 @@
  *   3. Render article list or empty state
  *
  * Dependencies:
- *   - lib/api.js (fetchCategoryTree, fetchArticleList)
+ *   - lib/api.js (fetchSiteConfig, fetchCategoryTree, fetchArticleList)
  *   - components/Layout.js
  *   - next/link, next/router
  *   - lucide-react (icons)
@@ -22,7 +24,7 @@
  * - getServerSideProps ensures fresh data on each request
  * - Articles are pre-filtered to is_published=true by the API
  *
- * Last Modified: v1.0.1 - Visual polish + empty state
+ * Last Modified: v1.1.0 - SiteConfig support
  * ============================================
  */
 
@@ -31,14 +33,14 @@ import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
 import { ArrowRight, Clock, Eye } from 'lucide-react';
 import Layout from '../../components/Layout';
-import { fetchCategoryTree, fetchArticleList } from '../../lib/api';
+import { fetchSiteConfig, fetchCategoryTree, fetchArticleList } from '../../lib/api';
 
-export default function CategoryPage({ categoryTree, categorySlug, articles, categoryInfo }) {
+export default function CategoryPage({ siteConfig, categoryTree, categorySlug, articles, categoryInfo }) {
   const router = useRouter();
 
   if (router.isFallback) {
     return (
-      <Layout categoryTree={categoryTree}>
+      <Layout categoryTree={categoryTree} siteConfig={siteConfig}>
         <div className="flex items-center justify-center min-h-[50vh]">
           <div className="text-white/20 text-sm">Loading...</div>
         </div>
@@ -52,6 +54,7 @@ export default function CategoryPage({ categoryTree, categorySlug, articles, cat
   return (
     <Layout
       categoryTree={categoryTree}
+      siteConfig={siteConfig}
       title={title}
       description={categoryInfo?.description || `Articles in ${title}`}
     >
@@ -157,7 +160,8 @@ export default function CategoryPage({ categoryTree, categorySlug, articles, cat
 export async function getServerSideProps(context) {
   const { category: categorySlug } = context.params;
 
-  const [categoryTree, articleData] = await Promise.all([
+  const [siteConfig, categoryTree, articleData] = await Promise.all([
+    fetchSiteConfig(),
     fetchCategoryTree(),
     fetchArticleList({ category: categorySlug }),
   ]);
@@ -188,6 +192,7 @@ export async function getServerSideProps(context) {
   return {
     props: {
       categoryTree: categoryTree || [],
+      siteConfig: siteConfig || null,
       categorySlug,
       articles,
       categoryInfo: categoryInfo

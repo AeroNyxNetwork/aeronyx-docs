@@ -164,6 +164,7 @@ function CategoryGroup({ category, currentSlug, depth = 0 }) {
     book: '📖', folder: '📁', code: '💻', rocket: '🚀',
     shield: '🛡️', brain: '🧠', globe: '🌐', key: '🔑',
     api: '⚡', guide: '📘', faq: '❓', changelog: '📋',
+    server: '🖥️', dashboard: '📊',
   };
   const displayIcon = iconMap[category.icon] || '📄';
 

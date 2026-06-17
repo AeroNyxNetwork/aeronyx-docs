@@ -3,7 +3,9 @@
  * File: docs-frontend/components/Header.js
  * ============================================
  * Creation Reason: Persistent top bar with logo, search trigger, nav links
- * Modification Reason: v1.0.1 - Added scroll-aware shadow/border transition,
+ * Modification Reason:
+ *   v1.1.0 - Read external link label/url from docs SiteConfig.
+ *   v1.0.1 - Added scroll-aware shadow/border transition,
  *   improved keyboard shortcut display (Mac vs Win), accessibility labels
  *
  * Main Functionality:
@@ -23,7 +25,7 @@
  * - onOpenSearch opens the search modal
  * - Scroll listener adds subtle shadow after 10px scroll
  *
- * Last Modified: v1.0.1 - Scroll shadow + platform shortcut key
+ * Last Modified: v1.1.0 - Admin-controlled external link
  * ============================================
  */
 
@@ -47,7 +49,7 @@ const AeroNyxLogo = () => (
   </svg>
 );
 
-export default function Header({ onToggleSidebar, onOpenSearch }) {
+export default function Header({ onToggleSidebar, onOpenSearch, siteConfig = null }) {
   const [scrolled, setScrolled] = useState(false);
   const [isMac, setIsMac] = useState(false);
 
@@ -145,14 +147,16 @@ export default function Header({ onToggleSidebar, onOpenSearch }) {
           </button>
 
           <a
-            href="https://aeronyx.network"
+            href={siteConfig?.external_link_url || 'https://aeronyx.network'}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md
               text-xs text-white/30 hover:text-white/60 hover:bg-white/[0.04]
               transition-all"
           >
-            <span className="hidden sm:inline">aeronyx.network</span>
+            <span className="hidden sm:inline">
+              {siteConfig?.external_link_label || 'aeronyx.network'}
+            </span>
             <ExternalLink size={11} />
           </a>
         </div>

@@ -3,18 +3,21 @@
  * File: docs-frontend/pages/index.js
  * ============================================
  * Creation Reason: Documentation homepage / landing page
- * Modification Reason: v1.0.1 - Enhanced visual design with brand gradient
+ * Modification Reason:
+ *   v1.1.0 - Read homepage hero, SEO, and empty-state copy from Django
+ *     docs SiteConfig for GEO/admin control.
+ *   v1.0.1 - Enhanced visual design with brand gradient
  *   hero section, improved card hover effects, better empty state,
  *   added subtle grid pattern background for "wow factor"
  *
  * Main Logical Flow:
- *   1. getServerSideProps fetches categoryTree + recent articles
+ *   1. getServerSideProps fetches siteConfig + categoryTree + recent articles
  *   2. Renders hero section with brand gradient + intro text
  *   3. Shows recent articles as feature cards
  *   4. Shows category grid for browsing
  *
  * Dependencies:
- *   - lib/api.js (fetchCategoryTree, fetchArticleList)
+ *   - lib/api.js (fetchSiteConfig, fetchCategoryTree, fetchArticleList)
  *   - components/Layout.js
  *   - framer-motion (entrance animations)
  *   - lucide-react (icons)
@@ -24,7 +27,7 @@
  * - Category cards link to first article or category index
  * - getServerSideProps handles both paginated & raw API responses
  *
- * Last Modified: v1.0.1 - Visual upgrade + better data handling
+ * Last Modified: v1.1.0 - Admin-controlled GEO homepage copy
  * ============================================
  */
 
@@ -32,11 +35,17 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { BookOpen, ArrowRight, Clock, Eye, Search } from 'lucide-react';
 import Layout from '../components/Layout';
-import { fetchCategoryTree, fetchArticleList } from '../lib/api';
+import { fetchSiteConfig, fetchCategoryTree, fetchArticleList } from '../lib/api';
 
-export default function DocsHome({ categoryTree, recentArticles }) {
+export default function DocsHome({ siteConfig, categoryTree, recentArticles }) {
   return (
-    <Layout categoryTree={categoryTree} title="AeroNyx Docs">
+    <Layout
+      categoryTree={categoryTree}
+      siteConfig={siteConfig}
+      title={siteConfig?.seo_title || 'AeroNyx Docs'}
+      description={siteConfig?.seo_description}
+      meta={{ keywords: siteConfig?.seo_keywords }}
+    >
       <div className="max-w-4xl mx-auto px-6 py-10 lg:py-14">
 
         {/* ===== Hero Section ===== */}
@@ -66,20 +75,20 @@ export default function DocsHome({ categoryTree, recentArticles }) {
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/[0.08] border border-primary/[0.12] mb-6">
               <BookOpen size={13} className="text-primary" />
               <span className="text-[11px] font-medium text-primary-300 tracking-wide">
-                Documentation &amp; Blog
+                {siteConfig?.badge_label || 'Documentation & Blog'}
               </span>
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-light mb-4 text-white/95 leading-[1.15]">
-              AeroNyx{' '}
+              {siteConfig?.hero_title || 'AeroNyx'}{' '}
               <span className="font-semibold bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
-                Documentation
+                {siteConfig?.hero_highlight || 'Documentation'}
               </span>
             </h1>
 
             <p className="text-[15px] sm:text-base text-white/40 max-w-xl leading-relaxed">
-              Everything you need to understand, deploy, and build with AeroNyx Network.
-              From getting started guides to deep technical references.
+              {siteConfig?.hero_description ||
+                'Everything you need to understand, deploy, and build with AeroNyx Network. From getting started guides to deep technical references.'}
             </p>
           </div>
         </motion.div>
@@ -147,10 +156,11 @@ export default function DocsHome({ categoryTree, recentArticles }) {
               <Search size={24} className="text-white/15" />
             </div>
             <h2 className="text-lg text-white/50 mb-2 font-light">
-              Documentation coming soon
+              {siteConfig?.empty_state_title || 'Documentation coming soon'}
             </h2>
             <p className="text-sm text-white/20 max-w-sm mx-auto">
-              We&apos;re building out our docs. Check back soon or visit the main site.
+              {siteConfig?.empty_state_description ||
+                "We're building out our docs. Check back soon or visit the main site."}
             </p>
           </div>
         )}
@@ -220,6 +230,7 @@ function CategoryCard({ category }) {
     book: '📖', folder: '📁', code: '💻', rocket: '🚀',
     shield: '🛡️', brain: '🧠', globe: '🌐', key: '🔑',
     api: '⚡', guide: '📘', faq: '❓', changelog: '📋',
+    server: '🖥️', dashboard: '📊',
   };
   const icon = iconMap[category.icon] || '📄';
   const count = category.article_count || category.articles?.length || 0;
@@ -260,7 +271,8 @@ function CategoryCard({ category }) {
 // ============================================
 
 export async function getServerSideProps() {
-  const [categoryTree, articleData] = await Promise.all([
+  const [siteConfig, categoryTree, articleData] = await Promise.all([
+    fetchSiteConfig(),
     fetchCategoryTree(),
     fetchArticleList(),
   ]);
@@ -276,6 +288,7 @@ export async function getServerSideProps() {
 
   return {
     props: {
+      siteConfig: siteConfig || null,
       categoryTree: categoryTree || [],
       recentArticles,
     },

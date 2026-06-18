@@ -33,11 +33,12 @@ export async function getServerSideProps({ res }) {
   const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.aeronyx.network/api';
   const fallback = `# AeroNyx Docs
 
-> AeroNyx documentation describes decentralized privacy infrastructure, VPN routing, encrypted communication, and DePIN node operations.
+> AeroNyx documentation describes the open AeroNyx privacy protocol and its product ecosystem: private routing, encrypted peer-to-peer communication, encrypted storage, Memory Chain records, Rust privacy node operation, nodeboard, and agent-to-agent encrypted services.
 
 ## Public data sources
 - Documentation API: ${apiBase}/docs/
 - Network statistics API: ${apiBase}/vpn/public/network-stats/
+- Operator console: https://app.aeronyx.network
 `;
 
   try {

@@ -3,7 +3,11 @@
  * File: docs-frontend/pages/network-stats.js
  * ============================================
  * Creation Reason: Provide a GEO-friendly public data page for AeroNyx network metrics.
- * Modification Reason: Initial implementation.
+ * Modification Reason:
+ *   v1.1.0 - Replaced public-facing VPN wording with AeroNyx privacy
+ *     protocol wording so network stats describe the protocol and privacy
+ *     nodes instead of presenting the product as a VPN panel.
+ *   v1.0.0 - Initial implementation.
  *
  * Main Functionality:
  *   - Renders public aggregate AeroNyx network statistics
@@ -24,7 +28,8 @@
  * - Keep this page factual and citation-friendly.
  * - Do not add client IPs, destinations, DNS contents, domains, URLs, or payload data.
  *
- * Last Modified: v1.0.0 - Initial public network stats page
+ * Last Modified: v1.1.0 - Use privacy protocol terminology on public stats
+ * Previous: v1.0.0 - Initial public network stats page
  * ============================================
  */
 
@@ -80,7 +85,7 @@ export default function NetworkStatsPage({ siteConfig, categoryTree, stats }) {
       title="AeroNyx Network Stats"
       description="Public aggregate AeroNyx privacy protocol statistics for encrypted traffic, encrypted message forwarding, node coverage, and availability."
       meta={{
-        keywords: 'AeroNyx network stats, encrypted traffic, DePIN VPN nodes, privacy protocol metrics',
+        keywords: 'AeroNyx network stats, encrypted traffic, privacy nodes, privacy protocol metrics',
       }}
     >
       <div className="max-w-5xl mx-auto px-6 py-10 lg:py-14">
@@ -103,7 +108,7 @@ export default function NetworkStatsPage({ siteConfig, categoryTree, stats }) {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
           <Metric
             icon={Globe2}
-            label="Public VPN Nodes"
+            label="Public Privacy Nodes"
             value={formatInteger(network.public_vpn_candidates)}
             detail={`${formatInteger(network.regions_count)} active region${Number(network.regions_count) === 1 ? '' : 's'}`}
           />
@@ -135,12 +140,13 @@ export default function NetworkStatsPage({ siteConfig, categoryTree, stats }) {
             <div className="space-y-3 text-[13px] leading-relaxed text-white/40">
               <p>
                 Encrypted traffic is the aggregate number of encrypted payload bytes forwarded by
-                AeroNyx VPN sessions. Encrypted packets count protocol-level forwarding events
-                reported by online Rust nodes.
+                AeroNyx privacy protocol sessions. Encrypted packets count protocol-level
+                forwarding events reported by online Rust nodes.
               </p>
               <p>
-                Node and region counts describe public VPN candidates that can participate in
-                privacy routing. Availability is computed from signed heartbeat samples.
+                Node and region counts describe public privacy-node candidates that can
+                participate in privacy routing. Availability is computed from signed heartbeat
+                samples.
               </p>
             </div>
           </section>

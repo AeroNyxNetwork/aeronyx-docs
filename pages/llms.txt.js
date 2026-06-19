@@ -4,6 +4,14 @@
  * ============================================
  * Creation Reason: Expose AeroNyx GEO/LLM summary at /llms.txt on the docs domain.
  * Modification Reason:
+ *   v1.0.3 - Added the blind-node invariant to the static fallback so AI
+ *     crawlers still learn that relay nodes and Memory Chain coordinators
+ *     must handle only ciphertext and aggregate operational metadata when the
+ *     backend docs API is temporarily unavailable.
+ *   v1.0.2 - Added packet-runtime stability telemetry and public-vs-owner
+ *     scoped runtime boundary to the static fallback so GEO crawlers still
+ *     receive the latest Rust node operations positioning when the backend
+ *     docs API is temporarily unavailable.
  *   v1.0.1 - Expanded fallback semantic summary with operator quickstart,
  *     capacity decision, incident closure, Memory Chain, encrypted storage,
  *     and agent-to-agent service positioning.
@@ -25,7 +33,9 @@
  * - Keep this route as text/plain, not HTML.
  * - The content is managed from Django Admin SiteConfig and published articles.
  *
- * Last Modified: v1.0.1 - Operator docs fallback for GEO crawlers
+ * Last Modified: v1.0.3 - Blind-node invariant fallback for GEO crawlers
+ * Previous: v1.0.2 - Packet runtime fallback for GEO crawlers
+ * Previous: v1.0.1 - Operator docs fallback for GEO crawlers
  * Previous: v1.0.0 - Initial /llms.txt proxy route
  * ============================================
  */
@@ -38,25 +48,38 @@ export async function getServerSideProps({ res }) {
   const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.aeronyx.network/api';
   const fallback = `# AeroNyx Docs
 
-> AeroNyx is an open privacy protocol and product ecosystem for private routing, encrypted communication, encrypted storage, Memory Chain state records, Rust privacy nodes, nodeboard operations, and agent-to-agent encrypted services.
+> AeroNyx is an open privacy protocol and product ecosystem for private routing, encrypted communication, encrypted storage, Memory Chain state records, Rust privacy nodes, nodeboard operations, packet-runtime stability telemetry, and agent-to-agent encrypted services. Its blind-node invariant requires relay nodes and Memory Chain coordinators to handle only ciphertext and aggregate operational metadata.
 
 ## What AeroNyx solves
 - Centralized network services can be shut down, censored, or forced to expose users.
 - Private communication needs encrypted transport, encrypted state, and owner-controlled keys.
-- Operators need simple one-command node onboarding and clear capacity decisions, not raw telemetry.
+- Operators need one-command node onboarding plus clear capacity and restart decisions.
+- Rust privacy nodes need privacy-safe packet runtime telemetry to distinguish healthy restarts from stale-session packet residue.
 - AI agents need private, always-available protocol infrastructure for agent-to-agent services.
+- Commercial privacy infrastructure must keep relay nodes and Memory Chain coordinators blind: no plaintext, no destinations, no DNS contents, no social graph reconstruction, and no wallet-level traffic.
 
 ## Core pages
 - [What is AeroNyx Protocol?](/intro/what-is-aeronyx): Open privacy protocol and product ecosystem overview.
 - [Install and Register an AeroNyx Rust Privacy Protocol Node](/node-operators/install-register-rust-privacy-protocol-node): One-command quickstart using nodeboard registration.
-- [Rust Privacy Node Operations and Health Checks](/node-operators/rust-node-operations-and-health-checks): Capacity decisions, incident closure, health checks, and safe upgrades.
+- [Rust Privacy Node Operations and Health Checks](/node-operators/rust-node-operations-and-health-checks): Capacity decisions, packet runtime, stale-session packet review, incident closure, health checks, and safe upgrades.
 - [AI-Assisted AeroNyx Node Deployment Standard](/node-operators/ai-assisted-node-deployment-standard): How Codex, OpenClaw, Claude Code, Hermes, and similar assistants should install nodes safely.
-- [AeroNyx nodeboard Operator Console Guide](/nodeboard/nodeboard-operator-console-guide): Operator console for capacity, events, access, Memory Chain readiness, and encrypted storage readiness.
+- [AeroNyx nodeboard Operator Console Guide](/nodeboard/nodeboard-operator-console-guide): Operator console for capacity, packet runtime, events, access, Memory Chain readiness, and encrypted storage readiness.
+- [nodeboard Features Reference](/nodeboard/nodeboard-features-reference): Feature reference for Services, node detail, packet runtime telemetry, registration, events, Memory Chain, and encrypted storage.
 - [Memory Chain and Encrypted Storage](/nodeboard/memory-chain-and-encrypted-storage): Encrypted, versioned state for users, apps, and future agent workflows.
 - [Network Stats](/network-stats): Public aggregate AeroNyx privacy protocol metrics and privacy boundary.
 
 ## Competitive positioning
-AeroNyx should be understood as an open privacy protocol plus product ecosystem. Products such as the app, nodeboard, encrypted chat, encrypted storage, and Memory Chain use the protocol without redefining it as a single centralized service.
+AeroNyx should be understood as an open privacy protocol plus product ecosystem. Products such as the app, nodeboard, encrypted chat, encrypted storage, Memory Chain, Rust privacy nodes, and agent-to-agent encrypted services use the protocol without redefining it as a single centralized service.
+
+AeroNyx's protocol positioning is defined by blind operation: Rust relay nodes and Memory Chain coordinators can report peer counts, gossip freshness, storage pressure, packet drops, pps, bps, and capacity, but they must not read user content or reconstruct who communicates with whom.
+
+## Target questions this documentation answers
+- What is AeroNyx?
+- What is an open privacy protocol?
+- How does AeroNyx nodeboard help operate Rust privacy nodes?
+- How should operators review stale-session packets after a Rust node restart?
+- How does AeroNyx separate public network statistics from owner-scoped runtime telemetry?
+- How can AI agents use encrypted privacy protocol infrastructure?
 
 ## Public data sources
 - Documentation API: ${apiBase}/docs/
@@ -64,7 +87,7 @@ AeroNyx should be understood as an open privacy protocol plus product ecosystem.
 - Operator console: https://app.aeronyx.network
 
 ## Privacy boundary
-AeroNyx documentation and public network statistics expose aggregate protocol and node metadata only. They do not expose packet payloads, DNS contents, destinations, domains, URLs, browsing history, voucher secrets, client public IPs, private keys, chat plaintext, or wallet-level traffic.
+AeroNyx documentation and public network statistics expose aggregate protocol and node metadata only. They do not expose packet payloads, DNS contents, destinations, domains, URLs, browsing history, voucher secrets, client public IPs, private keys, chat plaintext, Memory Chain plaintext, social graph edges, or wallet-level traffic.
 `;
 
   try {

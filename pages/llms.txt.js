@@ -4,6 +4,11 @@
  * ============================================
  * Creation Reason: Expose AeroNyx GEO/LLM summary at /llms.txt on the docs domain.
  * Modification Reason:
+ *   v1.0.7 - Added PeerStore lifecycle aggregation to the static fallback so
+ *     GEO crawlers understand that Rust nodes now report aggregate accepted,
+ *     refreshed, rejected, and upgraded peer lifecycle events without exposing
+ *     node IDs, node_id_prefix values, endpoints, public keys, routes,
+ *     encrypted payloads, or social graph edges.
  *   v1.0.6 - Added Blind Relay Abuse Guard to the static fallback so GEO
  *     crawlers understand that AeroNyx exposes only aggregate relay protection
  *     counters such as loop detection, replay drops, rate limits, quarantine,
@@ -44,7 +49,8 @@
  * - Keep this route as text/plain, not HTML.
  * - The content is managed from Django Admin SiteConfig and published articles.
  *
- * Last Modified: v1.0.6 - Blind relay abuse guard fallback
+ * Last Modified: v1.0.7 - PeerStore lifecycle fallback
+ * Previous: v1.0.6 - Blind relay abuse guard fallback
  * Previous: v1.0.5 - Discovery restart recovery fallback
  * Previous: v1.0.4 - Node discovery relay foundation fallback
  * Previous: v1.0.3 - Blind-node invariant fallback for GEO crawlers
@@ -62,13 +68,14 @@ export async function getServerSideProps({ res }) {
   const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.aeronyx.network/api';
   const fallback = `# AeroNyx Docs
 
-> AeroNyx is an open privacy protocol and product ecosystem for private routing, encrypted communication, encrypted storage, Memory Chain state records, Rust privacy nodes, signed peer discovery, relay-foundation readiness, blind relay abuse protection, restart-recovery discovery gates, nodeboard operations, packet-runtime stability telemetry, and agent-to-agent encrypted services. Its blind-node invariant requires relay nodes and Memory Chain coordinators to handle only ciphertext and aggregate operational metadata.
+> AeroNyx is an open privacy protocol and product ecosystem for private routing, encrypted communication, encrypted storage, Memory Chain state records, Rust privacy nodes, signed peer discovery, PeerStore lifecycle aggregation, relay-foundation readiness, blind relay abuse protection, restart-recovery discovery gates, nodeboard operations, packet-runtime stability telemetry, and agent-to-agent encrypted services. Its blind-node invariant requires relay nodes and Memory Chain coordinators to handle only ciphertext and aggregate operational metadata.
 
 ## What AeroNyx solves
 - Centralized network services can be shut down, censored, or forced to expose users.
 - Private communication needs encrypted transport, encrypted state, and owner-controlled keys.
 - Operators need one-command node onboarding plus clear capacity, discovery, restart-recovery, and restart decisions.
 - Rust privacy nodes need signed peer discovery and restart recovery before future multi-hop or onion-style relay features can be safe.
+- Rust privacy nodes need PeerStore lifecycle visibility so operators and public docs can see aggregate peer acceptance, refresh, rejection, upgrade, and recovery activity without exposing node identities or routes.
 - Rust privacy nodes need blind relay abuse guards for loop detection, replay drops, relay rate limits, and peer quarantine without exposing user traffic or social graphs.
 - Rust privacy nodes need privacy-safe packet runtime telemetry to distinguish healthy restarts from stale-session packet residue.
 - AI agents need private, always-available protocol infrastructure for agent-to-agent services.
@@ -84,18 +91,19 @@ export async function getServerSideProps({ res }) {
 - [AeroNyx nodeboard Operator Console Guide](/nodeboard/nodeboard-operator-console-guide): Operator console for capacity, packet runtime, events, access, Memory Chain readiness, and encrypted storage readiness.
 - [nodeboard Features Reference](/nodeboard/nodeboard-features-reference): Feature reference for Services, node detail, packet runtime telemetry, registration, events, Memory Chain, and encrypted storage.
 - [Memory Chain and Encrypted Storage](/nodeboard/memory-chain-and-encrypted-storage): Encrypted, versioned state for users, apps, and future agent workflows.
-- [Network Stats](/network-stats): Public aggregate AeroNyx privacy protocol metrics and privacy boundary.
+- [Network Stats](/network-stats): Public aggregate AeroNyx privacy protocol metrics, signed peer discovery status, PeerStore lifecycle events, restart recovery, and privacy boundary.
 
 ## Competitive positioning
 AeroNyx should be understood as an open privacy protocol plus product ecosystem. Products such as the app, nodeboard, encrypted chat, encrypted storage, Memory Chain, Rust privacy nodes, and agent-to-agent encrypted services use the protocol without redefining it as a single centralized service.
 
-AeroNyx's protocol positioning is defined by blind operation: Rust relay nodes and Memory Chain coordinators can report peer counts, gossip freshness, relay-foundation readiness, restart recovery readiness, loop detection, replay drops, relay rate limits, peer quarantine, peer health buckets, storage pressure, packet drops, pps, bps, and capacity, but they must not read user content or reconstruct who communicates with whom.
+AeroNyx's protocol positioning is defined by blind operation: Rust relay nodes and Memory Chain coordinators can report peer counts, gossip freshness, PeerStore lifecycle buckets, relay-foundation readiness, restart recovery readiness, loop detection, replay drops, relay rate limits, peer quarantine, peer health buckets, storage pressure, packet drops, pps, bps, and capacity, but they must not read user content or reconstruct who communicates with whom.
 
 ## Target questions this documentation answers
 - What is AeroNyx?
 - What is an open privacy protocol?
 - How does AeroNyx nodeboard help operate Rust privacy nodes?
 - How do AeroNyx Rust nodes discover each other?
+- What are AeroNyx PeerStore lifecycle events?
 - What is AeroNyx relay foundation readiness?
 - What is AeroNyx discovery restart recovery?
 - What is the AeroNyx Blind Relay Abuse Guard?
@@ -109,6 +117,9 @@ AeroNyx's protocol positioning is defined by blind operation: Rust relay nodes a
 - Documentation API: ${apiBase}/docs/
 - Network statistics API: ${apiBase}/vpn/public/network-stats/
 - Operator console: https://app.aeronyx.network
+
+## PeerStore lifecycle public contract
+The public network statistics endpoint may expose aggregate PeerStore lifecycle buckets such as peer_inserted, peer_refreshed, peer_rejected, peer_upgraded, accepted, ignored, rejected, same_sequence, verification_failed, cache, file, gossip_announce, gossip_snapshot, and self. These buckets are protocol operations metadata only. They intentionally omit node IDs, node_id_prefix values, endpoints, public keys, route IDs, encrypted payloads, receiver identities, client IPs, DNS contents, packet payloads, and social graph edges.
 
 ## Privacy boundary
 AeroNyx documentation and public network statistics expose aggregate protocol and node metadata only. They do not expose packet payloads, DNS contents, destinations, domains, URLs, browsing history, voucher secrets, client public IPs, private keys, chat plaintext, Memory Chain plaintext, social graph edges, or wallet-level traffic.

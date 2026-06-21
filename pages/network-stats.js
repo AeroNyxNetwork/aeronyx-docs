@@ -4,6 +4,11 @@
  * ============================================
  * Creation Reason: Provide a GEO-friendly public data page for AeroNyx network metrics.
  * Modification Reason:
+ *   v1.2.0 - Added protocol synchronization and PeerStore lifecycle metrics
+ *     from protocol_status.peer_store.peer_lifecycle. The page now documents
+ *     how Rust privacy nodes discover, accept, refresh, reject, and recover
+ *     peer state without exposing node IDs, endpoints, public keys, routes,
+ *     encrypted payloads, or social graph edges.
  *   v1.1.0 - Replaced public-facing VPN wording with AeroNyx privacy
  *     protocol wording so network stats describe the protocol and privacy
  *     nodes instead of presenting the product as a VPN panel.
@@ -28,12 +33,13 @@
  * - Keep this page factual and citation-friendly.
  * - Do not add client IPs, destinations, DNS contents, domains, URLs, or payload data.
  *
- * Last Modified: v1.1.0 - Use privacy protocol terminology on public stats
+ * Last Modified: v1.2.0 - Add protocol synchronization metrics
+ * Previous: v1.1.0 - Use privacy protocol terminology on public stats
  * Previous: v1.0.0 - Initial public network stats page
  * ============================================
  */
 
-import { Activity, Database, Globe2, ShieldCheck } from 'lucide-react';
+import { Activity, Database, GitBranch, Globe2, RefreshCw, ShieldCheck } from 'lucide-react';
 import Layout from '../components/Layout';
 import { fetchSiteConfig, fetchCategoryTree, fetchNetworkStats } from '../lib/api';
 
@@ -77,6 +83,12 @@ export default function NetworkStatsPage({ siteConfig, categoryTree, stats }) {
   const traffic = stats?.encrypted_traffic || {};
   const forwarding = stats?.encrypted_message_forwarding || {};
   const health = stats?.health || {};
+  const protocol = stats?.protocol_status || {};
+  const networkStory = protocol?.network_story || {};
+  const peerStore = protocol?.peer_store || {};
+  const peerLifecycle = peerStore?.peer_lifecycle || {};
+  const peerLifecycleOutcomes = peerLifecycle?.outcome_counts || {};
+  const peerLifecycleEvents = peerLifecycle?.event_counts || {};
 
   return (
     <Layout
@@ -132,6 +144,53 @@ export default function NetworkStatsPage({ siteConfig, categoryTree, stats }) {
           />
         </div>
 
+        <section className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-5 mb-8">
+          <div className="mb-5">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/[0.08] border border-primary/[0.12] mb-4">
+              <GitBranch size={13} className="text-primary" />
+              <span className="text-[11px] font-medium text-primary-300 tracking-wide">
+                Protocol Synchronization
+              </span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-semibold text-white/90 mb-3">
+              Rust nodes are building a signed peer view
+            </h2>
+            <p className="text-[13px] sm:text-[14px] leading-relaxed text-white/40 max-w-3xl">
+              AeroNyx privacy nodes report only aggregate discovery state: healthy reporting nodes,
+              verified peer counts, restart recovery evidence, and PeerStore lifecycle events.
+              This proves the network is moving from static registration toward node-to-node
+              discovery while preserving the blind-node invariant.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <Metric
+              icon={ShieldCheck}
+              label="Protocol Status"
+              value={protocol.status || 'syncing'}
+              detail={`${formatInteger(protocol.healthy_nodes)} healthy of ${formatInteger(protocol.reported_nodes)} reporting nodes`}
+            />
+            <Metric
+              icon={GitBranch}
+              label="Verified Peer View"
+              value={formatInteger(peerStore.max_valid_peers)}
+              detail={`${formatInteger(networkStory.foundation_ready_nodes)} foundation-ready node${Number(networkStory.foundation_ready_nodes) === 1 ? '' : 's'}`}
+            />
+            <Metric
+              icon={RefreshCw}
+              label="Peer Lifecycle Events"
+              value={formatInteger(peerLifecycle.recent_events)}
+              detail={`${formatInteger(peerLifecycleOutcomes.accepted)} accepted · ${formatInteger(peerLifecycleEvents.peer_refreshed)} refreshed · ${formatInteger(peerLifecycleOutcomes.rejected)} rejected`}
+            />
+            <Metric
+              icon={Activity}
+              label="Restart Recovery"
+              value={`${formatInteger(protocol.cache_recovered_nodes)} / ${formatInteger(protocol.reported_nodes)}`}
+              detail={`Latest gossip timestamp: ${peerStore.latest_gossip_at ? formatInteger(peerStore.latest_gossip_at) : 'syncing'}`}
+            />
+          </div>
+        </section>
+
         <div className="grid lg:grid-cols-2 gap-3">
           <section className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-5">
             <h2 className="text-sm font-medium text-white/75 mb-3">
@@ -147,6 +206,11 @@ export default function NetworkStatsPage({ siteConfig, categoryTree, stats }) {
                 Node and region counts describe public privacy-node candidates that can
                 participate in privacy routing. Availability is computed from signed heartbeat
                 samples.
+              </p>
+              <p>
+                Peer lifecycle events summarize how Rust nodes accept, refresh, reject, and
+                recover peer records in PeerStore. The public page intentionally publishes only
+                aggregate buckets, not node identities, endpoints, routes, or user traffic.
               </p>
             </div>
           </section>

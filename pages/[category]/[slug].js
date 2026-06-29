@@ -42,6 +42,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Clock, Eye, User, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 import Layout from '../../components/Layout';
+import CategoryPage, { getCategoryPageProps } from './index';
 import MarkdownRenderer, { extractTOC } from '../../components/MarkdownRenderer';
 import {
   articleHref,
@@ -51,6 +52,7 @@ import {
   fetchArticleBySlug,
   fetchCategoryTree,
   languagePathPrefix,
+  normalizeLanguage,
 } from '../../lib/api';
 
 // ============================================
@@ -68,8 +70,11 @@ function estimateReadTime(content) {
 // ============================================
 
 export default function ArticlePage({
+  pageKind = 'article',
   siteConfig,
   categoryTree,
+  articles,
+  categoryInfo,
   article,
   categorySlug,
   currentLanguage = DEFAULT_LANGUAGE,
@@ -86,6 +91,19 @@ export default function ArticlePage({
     [article?.content]
   );
   const readTime = article?.content ? estimateReadTime(article.content) : 0;
+
+  if (pageKind === 'category') {
+    return (
+      <CategoryPage
+        siteConfig={siteConfig}
+        categoryTree={categoryTree}
+        categorySlug={categorySlug}
+        articles={articles}
+        categoryInfo={categoryInfo}
+        currentLanguage={currentLanguage}
+      />
+    );
+  }
 
   // Reading progress bar
   useEffect(() => {
@@ -379,6 +397,21 @@ export default function ArticlePage({
 
 export async function getArticlePageProps(context, lang = DEFAULT_LANGUAGE) {
   const { category: categorySlug, slug } = context.params;
+  const isLanguageCategory = SUPPORTED_LANGUAGES.some((language) => language.code === categorySlug);
+
+  if (isLanguageCategory) {
+    const categoryProps = await getCategoryPageProps(
+      { params: { category: slug } },
+      normalizeLanguage(categorySlug)
+    );
+    return {
+      ...categoryProps,
+      props: {
+        ...categoryProps.props,
+        pageKind: 'category',
+      },
+    };
+  }
 
   const [siteConfig, categoryTree, article] = await Promise.all([
     fetchSiteConfig(),

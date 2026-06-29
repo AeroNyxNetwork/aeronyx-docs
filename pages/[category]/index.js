@@ -33,24 +33,40 @@ import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
 import { ArrowRight, Clock, Eye } from 'lucide-react';
 import Layout from '../../components/Layout';
+import DocsHome, { getDocsHomeProps } from '../index';
 import {
   articleHref,
   DEFAULT_LANGUAGE,
+  SUPPORTED_LANGUAGES,
   fetchSiteConfig,
   fetchCategoryTree,
   fetchArticleList,
   languagePathPrefix,
+  normalizeLanguage,
 } from '../../lib/api';
 
 export default function CategoryPage({
+  pageKind = 'category',
   siteConfig,
   categoryTree,
+  recentArticles,
   categorySlug,
   articles,
   categoryInfo,
   currentLanguage = DEFAULT_LANGUAGE,
 }) {
   const router = useRouter();
+
+  if (pageKind === 'home') {
+    return (
+      <DocsHome
+        siteConfig={siteConfig}
+        categoryTree={categoryTree}
+        recentArticles={recentArticles}
+        currentLanguage={currentLanguage}
+      />
+    );
+  }
 
   if (router.isFallback) {
     return (
@@ -178,6 +194,18 @@ export default function CategoryPage({
 
 export async function getCategoryPageProps(context, lang = DEFAULT_LANGUAGE) {
   const { category: categorySlug } = context.params;
+  const isLanguageHome = SUPPORTED_LANGUAGES.some((language) => language.code === categorySlug);
+
+  if (isLanguageHome) {
+    const homeProps = await getDocsHomeProps(normalizeLanguage(categorySlug));
+    return {
+      ...homeProps,
+      props: {
+        ...homeProps.props,
+        pageKind: 'home',
+      },
+    };
+  }
 
   const [siteConfig, categoryTree, articleData] = await Promise.all([
     fetchSiteConfig(),

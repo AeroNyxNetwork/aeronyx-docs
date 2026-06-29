@@ -33,14 +33,32 @@ import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
 import { ArrowRight, Clock, Eye } from 'lucide-react';
 import Layout from '../../components/Layout';
-import { fetchSiteConfig, fetchCategoryTree, fetchArticleList } from '../../lib/api';
+import {
+  articleHref,
+  DEFAULT_LANGUAGE,
+  fetchSiteConfig,
+  fetchCategoryTree,
+  fetchArticleList,
+  languagePathPrefix,
+} from '../../lib/api';
 
-export default function CategoryPage({ siteConfig, categoryTree, categorySlug, articles, categoryInfo }) {
+export default function CategoryPage({
+  siteConfig,
+  categoryTree,
+  categorySlug,
+  articles,
+  categoryInfo,
+  currentLanguage = DEFAULT_LANGUAGE,
+}) {
   const router = useRouter();
 
   if (router.isFallback) {
     return (
-      <Layout categoryTree={categoryTree} siteConfig={siteConfig}>
+      <Layout
+        categoryTree={categoryTree}
+        siteConfig={siteConfig}
+        currentLanguage={currentLanguage}
+      >
         <div className="flex items-center justify-center min-h-[50vh]">
           <div className="text-white/20 text-sm">Loading...</div>
         </div>
@@ -57,12 +75,13 @@ export default function CategoryPage({ siteConfig, categoryTree, categorySlug, a
       siteConfig={siteConfig}
       title={title}
       description={categoryInfo?.description || `Articles in ${title}`}
+      currentLanguage={currentLanguage}
     >
       <div className="max-w-4xl mx-auto px-6 py-10 lg:py-12">
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-[11px] text-white/20 mb-6">
-          <Link href="/" className="hover:text-white/50 transition-colors">Docs</Link>
+          <Link href={languagePathPrefix(currentLanguage) || '/'} className="hover:text-white/50 transition-colors">Docs</Link>
           <span>/</span>
           <span className="text-white/40">{title}</span>
         </div>
@@ -100,7 +119,7 @@ export default function CategoryPage({ siteConfig, categoryTree, categorySlug, a
                 transition={{ duration: 0.3, delay: i * 0.04 }}
               >
                 <Link
-                  href={`/${categorySlug}/${article.slug}`}
+                  href={articleHref(article, currentLanguage, categorySlug)}
                   className="group flex items-center justify-between p-4 rounded-xl
                     border border-white/[0.04] bg-white/[0.01]
                     hover:bg-white/[0.03] hover:border-white/[0.08]
@@ -157,13 +176,13 @@ export default function CategoryPage({ siteConfig, categoryTree, categorySlug, a
 // Data Fetching
 // ============================================
 
-export async function getServerSideProps(context) {
+export async function getCategoryPageProps(context, lang = DEFAULT_LANGUAGE) {
   const { category: categorySlug } = context.params;
 
   const [siteConfig, categoryTree, articleData] = await Promise.all([
     fetchSiteConfig(),
-    fetchCategoryTree(),
-    fetchArticleList({ category: categorySlug }),
+    fetchCategoryTree({ lang }),
+    fetchArticleList({ category: categorySlug, lang }),
   ]);
 
   // Find category info from tree (recursive search)
@@ -195,9 +214,14 @@ export async function getServerSideProps(context) {
       siteConfig: siteConfig || null,
       categorySlug,
       articles,
+      currentLanguage: lang,
       categoryInfo: categoryInfo
         ? { name: categoryInfo.name, description: categoryInfo.description || '' }
         : null,
     },
   };
+}
+
+export async function getServerSideProps(context) {
+  return getCategoryPageProps(context, DEFAULT_LANGUAGE);
 }

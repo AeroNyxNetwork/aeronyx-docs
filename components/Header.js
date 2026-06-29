@@ -4,6 +4,7 @@
  * ============================================
  * Creation Reason: Persistent top bar with logo, search trigger, nav links
  * Modification Reason:
+ *   v1.2.0 - Added language switcher for multilingual SEO/GEO routes.
  *   v1.1.0 - Read external link label/url from docs SiteConfig.
  *   v1.0.1 - Added scroll-aware shadow/border transition,
  *   improved keyboard shortcut display (Mac vs Win), accessibility labels
@@ -12,6 +13,7 @@
  *   - AeroNyx logo (SVG from brand assets)
  *   - Search shortcut (Ctrl+K / Cmd+K) with platform detection
  *   - Link back to main site
+ *   - Language switcher
  *   - Mobile hamburger menu
  *   - Subtle border opacity change on scroll
  *
@@ -25,13 +27,20 @@
  * - onOpenSearch opens the search modal
  * - Scroll listener adds subtle shadow after 10px scroll
  *
- * Last Modified: v1.1.0 - Admin-controlled external link
+ * Last Modified: v1.2.0 - Multilingual language switcher
  * ============================================
  */
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Menu, Search, ExternalLink } from 'lucide-react';
+import { useRouter } from 'next/router';
+import { Menu, Search, ExternalLink, Globe2 } from 'lucide-react';
+import {
+  DEFAULT_LANGUAGE,
+  SUPPORTED_LANGUAGES,
+  languagePathPrefix,
+  normalizeLanguage,
+} from '../lib/api';
 
 const AeroNyxLogo = () => (
   <svg
@@ -49,9 +58,35 @@ const AeroNyxLogo = () => (
   </svg>
 );
 
-export default function Header({ onToggleSidebar, onOpenSearch, siteConfig = null }) {
+function stripLanguagePrefix(path) {
+  const withoutQuery = path.split('?')[0] || '/';
+  const matched = SUPPORTED_LANGUAGES.find(
+    (item) => item.code !== DEFAULT_LANGUAGE
+      && (withoutQuery === `/${item.code}` || withoutQuery.startsWith(`/${item.code}/`))
+  );
+  if (!matched) return path || '/';
+  const query = path.includes('?') ? `?${path.split('?').slice(1).join('?')}` : '';
+  const stripped = withoutQuery.slice(matched.code.length + 1) || '/';
+  return `${stripped}${query}`;
+}
+
+function buildLanguagePath(path, lang) {
+  const basePath = stripLanguagePrefix(path || '/');
+  const prefix = languagePathPrefix(lang);
+  if (!prefix) return basePath || '/';
+  return `${prefix}${basePath === '/' ? '' : basePath}`;
+}
+
+export default function Header({
+  onToggleSidebar,
+  onOpenSearch,
+  siteConfig = null,
+  currentLanguage = DEFAULT_LANGUAGE,
+}) {
+  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [isMac, setIsMac] = useState(false);
+  const normalizedLanguage = normalizeLanguage(currentLanguage);
 
   // Detect platform for keyboard shortcut display
   useEffect(() => {
@@ -103,7 +138,10 @@ export default function Header({ onToggleSidebar, onOpenSearch, siteConfig = nul
             <Menu size={20} className="text-white/60" />
           </button>
 
-          <Link href="/" className="flex items-center gap-2.5 group">
+          <Link
+            href={languagePathPrefix(normalizedLanguage) || '/'}
+            className="flex items-center gap-2.5 group"
+          >
             <AeroNyxLogo />
             <div className="flex items-baseline gap-1.5">
               <span className="text-sm font-semibold text-white/90 group-hover:text-white transition-colors">
@@ -145,6 +183,26 @@ export default function Header({ onToggleSidebar, onOpenSearch, siteConfig = nul
           >
             <Search size={18} className="text-white/50" />
           </button>
+
+          <label className="hidden md:flex items-center gap-1.5 px-2 py-1.5 rounded-md border border-white/[0.06] bg-white/[0.02] text-white/35 hover:text-white/65 hover:bg-white/[0.04] transition-all">
+            <Globe2 size={13} />
+            <span className="sr-only">Language</span>
+            <select
+              value={normalizedLanguage}
+              onChange={(event) => {
+                const nextPath = buildLanguagePath(router.asPath, event.target.value);
+                router.push(nextPath);
+              }}
+              className="bg-transparent text-xs outline-none cursor-pointer"
+              aria-label="Select documentation language"
+            >
+              {SUPPORTED_LANGUAGES.map((language) => (
+                <option key={language.code} value={language.code} className="bg-[#09090b] text-white">
+                  {language.nativeLabel}
+                </option>
+              ))}
+            </select>
+          </label>
 
           <a
             href={siteConfig?.external_link_url || 'https://aeronyx.network'}

@@ -3,9 +3,11 @@
  * File: docs-frontend/components/Sidebar.js
  * ============================================
  * Creation Reason: Tree-structured navigation for docs categories & articles
- * Modification Reason: v1.0.1 - Fixed expanded state not updating on route
- *   change (BUG: initial state was stale after navigation). Now uses useEffect
- *   to react to currentSlug changes. Improved mobile drawer animation.
+ * Modification Reason:
+ *   v1.2.0 - Sidebar article links respect currentLanguage for multilingual SEO routes.
+ *   v1.0.1 - Fixed expanded state not updating on route change (BUG:
+ *     initial state was stale after navigation). Now uses useEffect to react
+ *     to currentSlug changes. Improved mobile drawer animation.
  *
  * Main Functionality:
  *   - Renders category tree from API
@@ -31,7 +33,7 @@
  * - Supports up to 3 nesting levels (visual indent)
  * - expanded state is synced with currentSlug via useEffect
  *
- * Last Modified: v1.0.1 - Route-aware expand + mobile animation fix
+ * Last Modified: v1.2.0 - Multilingual sidebar links
  * ============================================
  */
 
@@ -39,6 +41,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { ChevronRight, FileText, X } from 'lucide-react';
+import { articleHref, DEFAULT_LANGUAGE } from '../lib/api';
 
 // ============================================
 // Helper: Check if a category subtree contains a given slug
@@ -46,7 +49,7 @@ import { ChevronRight, FileText, X } from 'lucide-react';
 
 function categoryContainsSlug(category, slug) {
   if (!slug) return false;
-  if (category.articles?.some((a) => a.slug === slug)) return true;
+  if (category.articles?.some((a) => a.slug === slug || a.translation_key === slug)) return true;
   if (category.children?.some((child) => categoryContainsSlug(child, slug))) return true;
   return false;
 }
@@ -55,7 +58,12 @@ function categoryContainsSlug(category, slug) {
 // Main Sidebar Component
 // ============================================
 
-export default function Sidebar({ categoryTree = [], isOpen, onClose }) {
+export default function Sidebar({
+  categoryTree = [],
+  isOpen,
+  onClose,
+  currentLanguage = DEFAULT_LANGUAGE,
+}) {
   const router = useRouter();
   const currentSlug = router.query.slug;
 
@@ -116,6 +124,7 @@ export default function Sidebar({ categoryTree = [], isOpen, onClose }) {
                   key={category.id || category.slug}
                   category={category}
                   currentSlug={currentSlug}
+                  currentLanguage={currentLanguage}
                   depth={0}
                 />
               ))}
@@ -143,7 +152,7 @@ export default function Sidebar({ categoryTree = [], isOpen, onClose }) {
 // CategoryGroup — Recursive category with articles
 // ============================================
 
-function CategoryGroup({ category, currentSlug, depth = 0 }) {
+function CategoryGroup({ category, currentSlug, currentLanguage = DEFAULT_LANGUAGE, depth = 0 }) {
   const hasArticles = category.articles && category.articles.length > 0;
   const hasChildren = category.children && category.children.length > 0;
   const hasContent = hasArticles || hasChildren;
@@ -210,6 +219,7 @@ function CategoryGroup({ category, currentSlug, depth = 0 }) {
                 key={child.id || child.slug}
                 category={child}
                 currentSlug={currentSlug}
+                currentLanguage={currentLanguage}
                 depth={depth + 1}
               />
             ))}
@@ -222,7 +232,8 @@ function CategoryGroup({ category, currentSlug, depth = 0 }) {
                   key={article.id || article.slug}
                   article={article}
                   categorySlug={category.slug}
-                  isActive={article.slug === currentSlug}
+                  currentLanguage={currentLanguage}
+                  isActive={article.slug === currentSlug || article.translation_key === currentSlug}
                 />
               ))}
             </div>
@@ -237,10 +248,10 @@ function CategoryGroup({ category, currentSlug, depth = 0 }) {
 // ArticleLink — Single article nav item
 // ============================================
 
-function ArticleLink({ article, categorySlug, isActive }) {
+function ArticleLink({ article, categorySlug, currentLanguage, isActive }) {
   return (
     <Link
-      href={`/${categorySlug}/${article.slug}`}
+      href={articleHref(article, currentLanguage, categorySlug)}
       className={`
         flex items-center gap-2 px-2.5 py-[6px] rounded-md text-[13px] transition-all
         ${

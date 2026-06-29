@@ -35,9 +35,21 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { BookOpen, ArrowRight, Clock, Eye, Search } from 'lucide-react';
 import Layout from '../components/Layout';
-import { fetchSiteConfig, fetchCategoryTree, fetchArticleList } from '../lib/api';
+import {
+  articleHref,
+  DEFAULT_LANGUAGE,
+  fetchSiteConfig,
+  fetchCategoryTree,
+  fetchArticleList,
+  languagePathPrefix,
+} from '../lib/api';
 
-export default function DocsHome({ siteConfig, categoryTree, recentArticles }) {
+export default function DocsHome({
+  siteConfig,
+  categoryTree,
+  recentArticles,
+  currentLanguage = DEFAULT_LANGUAGE,
+}) {
   return (
     <Layout
       categoryTree={categoryTree}
@@ -45,6 +57,7 @@ export default function DocsHome({ siteConfig, categoryTree, recentArticles }) {
       title={siteConfig?.seo_title || 'AeroNyx Docs'}
       description={siteConfig?.seo_description}
       meta={{ keywords: siteConfig?.seo_keywords }}
+      currentLanguage={currentLanguage}
     >
       <div className="max-w-4xl mx-auto px-6 py-10 lg:py-14">
 
@@ -115,7 +128,7 @@ export default function DocsHome({ siteConfig, categoryTree, recentArticles }) {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: 0.15 + i * 0.05 }}
                 >
-                  <ArticleCard article={article} />
+                  <ArticleCard article={article} currentLanguage={currentLanguage} />
                 </motion.div>
               ))}
             </div>
@@ -141,7 +154,7 @@ export default function DocsHome({ siteConfig, categoryTree, recentArticles }) {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: 0.25 + i * 0.05 }}
                 >
-                  <CategoryCard category={cat} />
+                  <CategoryCard category={cat} currentLanguage={currentLanguage} />
                 </motion.div>
               ))}
             </div>
@@ -173,9 +186,8 @@ export default function DocsHome({ siteConfig, categoryTree, recentArticles }) {
 // Sub-components
 // ============================================
 
-function ArticleCard({ article }) {
-  const catSlug = article.category_slug || 'uncategorized';
-  const href = `/${catSlug}/${article.slug}`;
+function ArticleCard({ article, currentLanguage }) {
+  const href = articleHref(article, currentLanguage);
 
   return (
     <Link
@@ -220,11 +232,11 @@ function ArticleCard({ article }) {
   );
 }
 
-function CategoryCard({ category }) {
+function CategoryCard({ category, currentLanguage }) {
   const firstArticle = category.articles?.[0];
   const href = firstArticle
-    ? `/${category.slug}/${firstArticle.slug}`
-    : `/${category.slug}`;
+    ? articleHref(firstArticle, currentLanguage, category.slug)
+    : `${languagePathPrefix(currentLanguage)}/${category.slug}`;
 
   const iconMap = {
     book: '📖', folder: '📁', code: '💻', rocket: '🚀',
@@ -270,11 +282,11 @@ function CategoryCard({ category }) {
 // Data Fetching
 // ============================================
 
-export async function getServerSideProps() {
+export async function getDocsHomeProps(lang = DEFAULT_LANGUAGE) {
   const [siteConfig, categoryTree, articleData] = await Promise.all([
     fetchSiteConfig(),
-    fetchCategoryTree(),
-    fetchArticleList(),
+    fetchCategoryTree({ lang }),
+    fetchArticleList({ lang }),
   ]);
 
   // Handle paginated response ({ results, count, ... }) or raw array
@@ -291,6 +303,11 @@ export async function getServerSideProps() {
       siteConfig: siteConfig || null,
       categoryTree: categoryTree || [],
       recentArticles,
+      currentLanguage: lang,
     },
   };
+}
+
+export async function getServerSideProps() {
+  return getDocsHomeProps(DEFAULT_LANGUAGE);
 }

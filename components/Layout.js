@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Wraps all pages with Header, Sidebar, and SearchModal
  * Modification Reason:
+ *   v1.2.0 - Thread currentLanguage through Header, Sidebar, and SearchModal
+ *     so multilingual routes keep navigation/search in the selected language.
  *   v1.1.0 - Accept siteConfig from Django docs admin for SEO site name,
  *     default description, and header external link.
  *   v1.0.1 - Added max-width constraint for ultra-wide
@@ -31,7 +33,7 @@
  * - Each page should pass categoryTree and siteConfig as props to Layout
  * - Layout does NOT fetch data itself
  *
- * Last Modified: v1.1.0 - Admin-controlled site config support
+ * Last Modified: v1.2.0 - Multilingual layout wiring
  * ============================================
  */
 
@@ -48,6 +50,7 @@ export default function Layout({
   title = 'AeroNyx Docs',
   description = 'AeroNyx Network — Documentation, guides, and technical references.',
   meta = {},
+  currentLanguage = 'en',
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -89,6 +92,7 @@ export default function Layout({
         onToggleSidebar={handleToggleSidebar}
         onOpenSearch={handleOpenSearch}
         siteConfig={siteConfig}
+        currentLanguage={currentLanguage}
       />
 
       {/* Body: Sidebar + Content */}
@@ -98,6 +102,7 @@ export default function Layout({
           categoryTree={categoryTree}
           isOpen={sidebarOpen}
           onClose={handleCloseSidebar}
+          currentLanguage={currentLanguage}
         />
 
         {/* Main content */}
@@ -110,6 +115,7 @@ export default function Layout({
       <SearchModal
         isOpen={searchOpen}
         onClose={handleCloseSearch}
+        currentLanguage={currentLanguage}
       />
     </>
   );

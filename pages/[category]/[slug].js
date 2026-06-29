@@ -37,12 +37,21 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
+import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Clock, Eye, User, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 import Layout from '../../components/Layout';
 import MarkdownRenderer, { extractTOC } from '../../components/MarkdownRenderer';
-import { fetchSiteConfig, fetchArticleBySlug, fetchCategoryTree } from '../../lib/api';
+import {
+  articleHref,
+  DEFAULT_LANGUAGE,
+  SUPPORTED_LANGUAGES,
+  fetchSiteConfig,
+  fetchArticleBySlug,
+  fetchCategoryTree,
+  languagePathPrefix,
+} from '../../lib/api';
 
 // ============================================
 // Estimated reading time utility
@@ -58,7 +67,13 @@ function estimateReadTime(content) {
 // Main Component
 // ============================================
 
-export default function ArticlePage({ siteConfig, categoryTree, article, categorySlug }) {
+export default function ArticlePage({
+  siteConfig,
+  categoryTree,
+  article,
+  categorySlug,
+  currentLanguage = DEFAULT_LANGUAGE,
+}) {
   const router = useRouter();
   const [activeHeading, setActiveHeading] = useState('');
   const [readProgress, setReadProgress] = useState(0);
@@ -118,7 +133,11 @@ export default function ArticlePage({ siteConfig, categoryTree, article, categor
   // 404 state
   if (router.isFallback || !article) {
     return (
-      <Layout categoryTree={categoryTree} siteConfig={siteConfig}>
+      <Layout
+        categoryTree={categoryTree}
+        siteConfig={siteConfig}
+        currentLanguage={currentLanguage}
+      >
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-center">
@@ -143,11 +162,32 @@ export default function ArticlePage({ siteConfig, categoryTree, article, categor
       siteConfig={siteConfig}
       title={article.meta_title || article.title}
       description={article.meta_description || article.summary}
+      currentLanguage={currentLanguage}
       meta={{
         keywords: article.meta_keywords,
         image: article.cover_image,
       }}
     >
+      <Head>
+        {SUPPORTED_LANGUAGES.map((language) => {
+          const canonicalSlug = article.canonical_slug || article.translation_key || article.slug;
+          const baseUrl = siteConfig?.docs_base_url || 'https://docs.aeronyx.network';
+          return (
+            <link
+              key={language.code}
+              rel="alternate"
+              hrefLang={language.code}
+              href={`${baseUrl}${languagePathPrefix(language.code)}/${articleCatSlug}/${canonicalSlug}`}
+            />
+          );
+        })}
+        <link
+          rel="alternate"
+          hrefLang="x-default"
+          href={`${siteConfig?.docs_base_url || 'https://docs.aeronyx.network'}/${articleCatSlug}/${article.canonical_slug || article.translation_key || article.slug}`}
+        />
+      </Head>
+
       {/* Reading progress bar */}
       <div
         className="reading-progress"
@@ -165,12 +205,17 @@ export default function ArticlePage({ siteConfig, categoryTree, article, categor
         >
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-[11px] text-white/20 mb-8" aria-label="Breadcrumb">
-            <Link href="/" className="hover:text-white/50 transition-colors">Docs</Link>
+            <Link
+              href={languagePathPrefix(currentLanguage) || '/'}
+              className="hover:text-white/50 transition-colors"
+            >
+              Docs
+            </Link>
             <span className="text-white/10">/</span>
             {article.category_name && (
               <>
                 <Link
-                  href={`/${articleCatSlug}`}
+                  href={`${languagePathPrefix(currentLanguage)}/${articleCatSlug}`}
                   className="hover:text-white/50 transition-colors"
                 >
                   {article.category_name}
@@ -243,7 +288,7 @@ export default function ArticlePage({ siteConfig, categoryTree, article, categor
             <div className="grid sm:grid-cols-2 gap-3">
               {article.prev_article ? (
                 <Link
-                  href={`/${articleCatSlug}/${article.prev_article.slug}`}
+                  href={articleHref(article.prev_article, currentLanguage, articleCatSlug)}
                   className="group flex items-center gap-3 p-4 rounded-xl
                     border border-white/[0.04] hover:border-white/[0.1] hover:bg-white/[0.02]
                     transition-all duration-200"
@@ -267,7 +312,7 @@ export default function ArticlePage({ siteConfig, categoryTree, article, categor
 
               {article.next_article ? (
                 <Link
-                  href={`/${articleCatSlug}/${article.next_article.slug}`}
+                  href={articleHref(article.next_article, currentLanguage, articleCatSlug)}
                   className="group flex items-center justify-end gap-3 p-4 rounded-xl
                     border border-white/[0.04] hover:border-white/[0.1] hover:bg-white/[0.02]
                     transition-all duration-200 text-right"
@@ -332,13 +377,13 @@ export default function ArticlePage({ siteConfig, categoryTree, article, categor
 // Data Fetching
 // ============================================
 
-export async function getServerSideProps(context) {
+export async function getArticlePageProps(context, lang = DEFAULT_LANGUAGE) {
   const { category: categorySlug, slug } = context.params;
 
   const [siteConfig, categoryTree, article] = await Promise.all([
     fetchSiteConfig(),
-    fetchCategoryTree(),
-    fetchArticleBySlug(slug),
+    fetchCategoryTree({ lang }),
+    fetchArticleBySlug(slug, { lang }),
   ]);
 
   if (!article) {
@@ -351,6 +396,11 @@ export async function getServerSideProps(context) {
       siteConfig: siteConfig || null,
       article,
       categorySlug,
+      currentLanguage: lang,
     },
   };
+}
+
+export async function getServerSideProps(context) {
+  return getArticlePageProps(context, DEFAULT_LANGUAGE);
 }

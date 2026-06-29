@@ -3,8 +3,10 @@
  * File: docs-frontend/components/SearchModal.js
  * ============================================
  * Creation Reason: Cmd+K search overlay for quick article lookup
- * Modification Reason: v1.0.1 - Added loading skeleton, improved empty
- *   state visuals, added result count badge, smoother transitions
+ * Modification Reason:
+ *   v1.2.0 - Search respects currentLanguage and returns localized article links.
+ *   v1.0.1 - Added loading skeleton, improved empty state visuals,
+ *     added result count badge, smoother transitions.
  *
  * Main Functionality:
  *   - Debounced search input (300ms)
@@ -24,16 +26,16 @@
  * - searchArticles() always returns an array (fixed in v1.0.1)
  * - Scroll selected item into view for long result lists
  *
- * Last Modified: v1.0.1 - Skeleton + count badge + scroll into view
+ * Last Modified: v1.2.0 - Multilingual search routing
  * ============================================
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { Search, FileText, ArrowRight, X, Loader2 } from 'lucide-react';
-import { searchArticles } from '../lib/api';
+import { articleHref, DEFAULT_LANGUAGE, searchArticles } from '../lib/api';
 
-export default function SearchModal({ isOpen, onClose }) {
+export default function SearchModal({ isOpen, onClose, currentLanguage = DEFAULT_LANGUAGE }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -80,14 +82,14 @@ export default function SearchModal({ isOpen, onClose }) {
 
     setLoading(true);
     const timer = setTimeout(async () => {
-      const data = await searchArticles(query);
+      const data = await searchArticles(query, { lang: currentLanguage });
       setResults(data);
       setSelectedIndex(0);
       setLoading(false);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, currentLanguage]);
 
   // Scroll selected item into view
   useEffect(() => {
@@ -98,9 +100,8 @@ export default function SearchModal({ isOpen, onClose }) {
 
   // Build article URL
   const getArticleUrl = useCallback((article) => {
-    const catSlug = article.category_slug || 'uncategorized';
-    return `/${catSlug}/${article.slug}`;
-  }, []);
+    return articleHref(article, currentLanguage);
+  }, [currentLanguage]);
 
   // Navigate to selected result
   const handleSelect = useCallback(

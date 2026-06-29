@@ -283,13 +283,13 @@ export default function ArticlePage({
             {readTime > 0 && (
               <span className="flex items-center gap-1.5">
                 <BookOpen size={11} />
-                {readTime} min read
+                {copy.minRead(readTime)}
               </span>
             )}
             {article.view_count > 0 && (
               <span className="flex items-center gap-1.5">
                 <Eye size={11} />
-                {article.view_count.toLocaleString()} views
+                {copy.views(article.view_count)}
               </span>
             )}
           </div>

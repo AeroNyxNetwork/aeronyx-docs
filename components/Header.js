@@ -38,6 +38,7 @@ import { Menu, Search, ExternalLink, Globe2 } from 'lucide-react';
 import {
   DEFAULT_LANGUAGE,
   SUPPORTED_LANGUAGES,
+  getUiCopy,
   languagePathPrefix,
   normalizeLanguage,
 } from '../lib/api';
@@ -87,6 +88,7 @@ export default function Header({
   const [scrolled, setScrolled] = useState(false);
   const [isMac, setIsMac] = useState(false);
   const normalizedLanguage = normalizeLanguage(currentLanguage);
+  const copy = getUiCopy(normalizedLanguage);
 
   // Detect platform for keyboard shortcut display
   useEffect(() => {
@@ -148,7 +150,7 @@ export default function Header({
                 AeroNyx
               </span>
               <span className="text-[11px] font-medium text-white/25 hidden sm:inline tracking-wide">
-                Docs
+                {copy.docs}
               </span>
             </div>
           </Link>
@@ -161,10 +163,10 @@ export default function Header({
             border border-white/[0.06] bg-white/[0.02]
             hover:bg-white/[0.05] hover:border-white/[0.1]
             transition-all max-w-xs w-full mx-4 lg:mx-8 group"
-          aria-label="Search documentation"
+          aria-label={copy.searchDocs}
         >
           <Search size={14} className="text-white/25 group-hover:text-white/40 transition-colors" />
-          <span className="text-[13px] text-white/25 flex-1 text-left">Search docs...</span>
+          <span className="text-[13px] text-white/25 flex-1 text-left">{copy.searchDocs}</span>
           <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded
             bg-white/[0.04] border border-white/[0.06]
             text-[10px] text-white/20 font-mono leading-none"

@@ -33,7 +33,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { Search, FileText, ArrowRight, X, Loader2 } from 'lucide-react';
-import { articleHref, DEFAULT_LANGUAGE, searchArticles } from '../lib/api';
+import { articleHref, DEFAULT_LANGUAGE, getUiCopy, searchArticles } from '../lib/api';
 
 export default function SearchModal({ isOpen, onClose, currentLanguage = DEFAULT_LANGUAGE }) {
   const [query, setQuery] = useState('');
@@ -43,6 +43,7 @@ export default function SearchModal({ isOpen, onClose, currentLanguage = DEFAULT
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const router = useRouter();
+  const copy = getUiCopy(currentLanguage);
 
   // Focus input when modal opens
   useEffect(() => {
@@ -151,7 +152,7 @@ export default function SearchModal({ isOpen, onClose, currentLanguage = DEFAULT
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search documentation..."
+            placeholder={copy.searchDocs}
             className="flex-1 bg-transparent text-sm text-white/90 placeholder:text-white/25 outline-none"
             autoComplete="off"
             spellCheck={false}
@@ -160,7 +161,7 @@ export default function SearchModal({ isOpen, onClose, currentLanguage = DEFAULT
             <button
               onClick={() => { setQuery(''); inputRef.current?.focus(); }}
               className="p-1 rounded-md hover:bg-white/5 transition-colors"
-              aria-label="Clear search"
+              aria-label={copy.clearSearch}
             >
               <X size={14} className="text-white/25" />
             </button>
@@ -191,8 +192,8 @@ export default function SearchModal({ isOpen, onClose, currentLanguage = DEFAULT
           {!loading && query.length >= 2 && results.length === 0 && (
             <div className="px-4 py-10 text-center">
               <div className="text-2xl mb-3 opacity-30">🔍</div>
-              <div className="text-sm text-white/30 mb-1">No results found</div>
-              <div className="text-xs text-white/15">Try different or broader keywords</div>
+              <div className="text-sm text-white/30 mb-1">{copy.noResultsFound}</div>
+              <div className="text-xs text-white/15">{copy.tryDifferentKeywords}</div>
             </div>
           )}
 
@@ -201,7 +202,7 @@ export default function SearchModal({ isOpen, onClose, currentLanguage = DEFAULT
             <div ref={listRef} className="py-2 px-2" role="listbox">
               {/* Count badge */}
               <div className="px-3 py-1.5 text-[10px] text-white/20 uppercase tracking-wider">
-                {results.length} result{results.length !== 1 ? 's' : ''}
+                {copy.resultCount(results.length)}
               </div>
 
               {results.map((article, i) => (
@@ -260,7 +261,7 @@ export default function SearchModal({ isOpen, onClose, currentLanguage = DEFAULT
           {/* Initial state */}
           {!loading && query.length < 2 && (
             <div className="px-4 py-10 text-center">
-              <div className="text-sm text-white/15">Type at least 2 characters to search</div>
+              <div className="text-sm text-white/15">{copy.typeAtLeastTwo}</div>
             </div>
           )}
         </div>
@@ -271,16 +272,16 @@ export default function SearchModal({ isOpen, onClose, currentLanguage = DEFAULT
             <span className="flex items-center gap-1">
               <kbd className="px-1 py-px rounded bg-white/[0.04] text-[9px]">↑</kbd>
               <kbd className="px-1 py-px rounded bg-white/[0.04] text-[9px]">↓</kbd>
-              Navigate
+              {copy.navigate}
             </span>
             <span className="flex items-center gap-1">
               <kbd className="px-1 py-px rounded bg-white/[0.04] text-[9px]">↵</kbd>
-              Open
+              {copy.open}
             </span>
           </div>
           <span className="flex items-center gap-1">
             <kbd className="px-1 py-px rounded bg-white/[0.04] text-[9px]">Esc</kbd>
-            Close
+            {copy.close}
           </span>
         </div>
       </div>

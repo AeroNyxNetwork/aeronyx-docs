@@ -51,6 +51,7 @@ import {
   fetchSiteConfig,
   fetchArticleBySlug,
   fetchCategoryTree,
+  getUiCopy,
   languagePathPrefix,
   normalizeLanguage,
 } from '../../lib/api';
@@ -82,6 +83,7 @@ export default function ArticlePage({
   const router = useRouter();
   const [activeHeading, setActiveHeading] = useState('');
   const [readProgress, setReadProgress] = useState(0);
+  const copy = getUiCopy(currentLanguage);
 
   // Extract TOC from markdown.
   // Keep the array stable so scroll progress renders do not recreate the
@@ -161,9 +163,12 @@ export default function ArticlePage({
             <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-center">
               <span className="text-2xl opacity-30">📄</span>
             </div>
-            <h1 className="text-lg text-white/50 mb-2 font-light">Article not found</h1>
-            <Link href="/" className="text-sm text-primary hover:text-primary-300 transition-colors">
-              &larr; Back to docs
+            <h1 className="text-lg text-white/50 mb-2 font-light">{copy.articleNotFound}</h1>
+            <Link
+              href={languagePathPrefix(currentLanguage) || '/'}
+              className="text-sm text-primary hover:text-primary-300 transition-colors"
+            >
+              &larr; {copy.backToDocs}
             </Link>
           </div>
         </div>
@@ -227,7 +232,7 @@ export default function ArticlePage({
               href={languagePathPrefix(currentLanguage) || '/'}
               className="hover:text-white/50 transition-colors"
             >
-              Docs
+              {copy.docs}
             </Link>
             <span className="text-white/10">/</span>
             {article.category_name && (
@@ -317,7 +322,7 @@ export default function ArticlePage({
                   />
                   <div className="min-w-0">
                     <div className="text-[10px] uppercase tracking-widest text-white/20 mb-1">
-                      Previous
+                      {copy.previous}
                     </div>
                     <div className="text-[13px] text-white/50 group-hover:text-white/75 truncate transition-colors">
                       {article.prev_article.title}
@@ -337,7 +342,7 @@ export default function ArticlePage({
                 >
                   <div className="min-w-0">
                     <div className="text-[10px] uppercase tracking-widest text-white/20 mb-1">
-                      Next
+                      {copy.next}
                     </div>
                     <div className="text-[13px] text-white/50 group-hover:text-white/75 truncate transition-colors">
                       {article.next_article.title}
@@ -359,7 +364,7 @@ export default function ArticlePage({
         {toc.length > 0 && (
           <aside className="hidden xl:block w-52 flex-shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto py-10 pr-6">
             <div className="text-[10px] uppercase tracking-[0.1em] text-white/20 mb-4 font-medium">
-              On this page
+              {copy.onThisPage}
             </div>
             <nav className="space-y-0.5" aria-label="Table of contents">
               {toc.map(({ level, text, id }) => (

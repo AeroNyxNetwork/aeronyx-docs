@@ -41,6 +41,7 @@ import {
   fetchSiteConfig,
   fetchCategoryTree,
   fetchArticleList,
+  getUiCopy,
   languagePathPrefix,
 } from '../lib/api';
 
@@ -50,6 +51,8 @@ export default function DocsHome({
   recentArticles,
   currentLanguage = DEFAULT_LANGUAGE,
 }) {
+  const copy = getUiCopy(currentLanguage);
+
   return (
     <Layout
       categoryTree={categoryTree}
@@ -116,7 +119,7 @@ export default function DocsHome({
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider">
-                Recent Articles
+                {copy.recentArticles}
               </h2>
             </div>
 
@@ -143,7 +146,7 @@ export default function DocsHome({
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider mb-6">
-              Browse by Category
+              {copy.browseByCategory}
             </h2>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -169,11 +172,10 @@ export default function DocsHome({
               <Search size={24} className="text-white/15" />
             </div>
             <h2 className="text-lg text-white/50 mb-2 font-light">
-              {siteConfig?.empty_state_title || 'Documentation coming soon'}
+              {siteConfig?.empty_state_title || copy.documentationComingSoon}
             </h2>
             <p className="text-sm text-white/20 max-w-sm mx-auto">
-              {siteConfig?.empty_state_description ||
-                "We're building out our docs. Check back soon or visit the main site."}
+              {siteConfig?.empty_state_description || copy.buildingDocs}
             </p>
           </div>
         )}
@@ -188,6 +190,7 @@ export default function DocsHome({
 
 function ArticleCard({ article, currentLanguage }) {
   const href = articleHref(article, currentLanguage);
+  const copy = getUiCopy(currentLanguage);
 
   return (
     <Link
@@ -198,7 +201,7 @@ function ArticleCard({ article, currentLanguage }) {
     >
       {article.is_pinned && (
         <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/[0.08] border border-primary/[0.1] text-[10px] text-primary-300 font-medium mb-2.5 tracking-wide">
-          Featured
+          {copy.featured}
         </div>
       )}
       <h3 className="text-[14px] font-medium text-white/80 group-hover:text-white mb-2 transition-colors leading-snug">
@@ -234,6 +237,7 @@ function ArticleCard({ article, currentLanguage }) {
 
 function CategoryCard({ category, currentLanguage }) {
   const firstArticle = category.articles?.[0];
+  const copy = getUiCopy(currentLanguage);
   const href = firstArticle
     ? articleHref(firstArticle, currentLanguage, category.slug)
     : `${languagePathPrefix(currentLanguage)}/${category.slug}`;
@@ -267,7 +271,7 @@ function CategoryCard({ category, currentLanguage }) {
       )}
       <div className="flex items-center justify-between">
         <span className="text-[11px] text-white/15 tabular-nums">
-          {count} article{count !== 1 ? 's' : ''}
+          {copy.articleCount(count)}
         </span>
         <ArrowRight
           size={13}

@@ -41,6 +41,7 @@ import {
   fetchSiteConfig,
   fetchCategoryTree,
   fetchArticleList,
+  getUiCopy,
   languagePathPrefix,
   normalizeLanguage,
 } from '../../lib/api';
@@ -56,6 +57,7 @@ export default function CategoryPage({
   currentLanguage = DEFAULT_LANGUAGE,
 }) {
   const router = useRouter();
+  const copy = getUiCopy(currentLanguage);
 
   if (pageKind === 'home') {
     return (
@@ -76,7 +78,7 @@ export default function CategoryPage({
         currentLanguage={currentLanguage}
       >
         <div className="flex items-center justify-center min-h-[50vh]">
-          <div className="text-white/20 text-sm">Loading...</div>
+          <div className="text-white/20 text-sm">{copy.loading}</div>
         </div>
       </Layout>
     );
@@ -97,7 +99,9 @@ export default function CategoryPage({
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-[11px] text-white/20 mb-6">
-          <Link href={languagePathPrefix(currentLanguage) || '/'} className="hover:text-white/50 transition-colors">Docs</Link>
+          <Link href={languagePathPrefix(currentLanguage) || '/'} className="hover:text-white/50 transition-colors">
+            {copy.docs}
+          </Link>
           <span>/</span>
           <span className="text-white/40">{title}</span>
         </div>
@@ -180,7 +184,7 @@ export default function CategoryPage({
             <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-center">
               <span className="text-xl opacity-40">📭</span>
             </div>
-            <p className="text-sm text-white/25">No articles in this category yet.</p>
+            <p className="text-sm text-white/25">{copy.noArticlesInCategory}</p>
           </div>
         )}
       </div>

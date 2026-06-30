@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Documentation homepage / landing page
  * Modification Reason:
+ *   v1.1.1 - Add canonical homepage metadata and localize article card dates
+ *     and view counters for multilingual home routes.
  *   v1.1.0 - Read homepage hero, SEO, and empty-state copy from Django
  *     docs SiteConfig for GEO/admin control.
  *   v1.0.1 - Enhanced visual design with brand gradient
@@ -27,7 +29,7 @@
  * - Category cards link to first article or category index
  * - getServerSideProps handles both paginated & raw API responses
  *
- * Last Modified: v1.1.0 - Admin-controlled GEO homepage copy
+ * Last Modified: v1.1.1 - Homepage SEO and localized article metadata
  * ============================================
  */
 
@@ -42,6 +44,7 @@ import {
   fetchCategoryTree,
   fetchArticleList,
   getUiCopy,
+  languageLocale,
   languagePathPrefix,
 } from '../lib/api';
 
@@ -52,6 +55,8 @@ export default function DocsHome({
   currentLanguage = DEFAULT_LANGUAGE,
 }) {
   const copy = getUiCopy(currentLanguage);
+  const docsBaseUrl = siteConfig?.docs_base_url || 'https://docs.aeronyx.network';
+  const canonicalUrl = `${docsBaseUrl}${languagePathPrefix(currentLanguage) || '/'}`;
 
   return (
     <Layout
@@ -59,7 +64,10 @@ export default function DocsHome({
       siteConfig={siteConfig}
       title={siteConfig?.seo_title || 'AeroNyx Docs'}
       description={siteConfig?.seo_description}
-      meta={{ keywords: siteConfig?.seo_keywords }}
+      meta={{
+        keywords: siteConfig?.seo_keywords,
+        canonical: canonicalUrl,
+      }}
       currentLanguage={currentLanguage}
     >
       <div className="max-w-4xl mx-auto px-6 py-10 lg:py-14">
@@ -191,6 +199,7 @@ export default function DocsHome({
 function ArticleCard({ article, currentLanguage }) {
   const href = articleHref(article, currentLanguage);
   const copy = getUiCopy(currentLanguage);
+  const locale = languageLocale(currentLanguage);
 
   return (
     <Link
@@ -219,7 +228,7 @@ function ArticleCard({ article, currentLanguage }) {
         {article.published_at && (
           <span className="flex items-center gap-1">
             <Clock size={10} />
-            {new Date(article.published_at).toLocaleDateString('en-US', {
+            {new Date(article.published_at).toLocaleDateString(locale, {
               month: 'short', day: 'numeric', year: 'numeric',
             })}
           </span>
@@ -227,7 +236,7 @@ function ArticleCard({ article, currentLanguage }) {
         {article.view_count > 0 && (
           <span className="flex items-center gap-1">
             <Eye size={10} />
-            {article.view_count}
+            {copy.views(article.view_count)}
           </span>
         )}
       </div>

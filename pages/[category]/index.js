@@ -4,6 +4,7 @@
  * ============================================
  * Creation Reason: Category page showing article list for a given category
  * Modification Reason:
+ *   v1.1.2 - Add self-referencing canonical URLs for category pages.
  *   v1.1.1 - Localize article metadata dates and view counters on category
  *     pages so non-English routes do not show English-only chrome.
  *   v1.1.0 - Pass SiteConfig into Layout for admin-controlled SEO/header.
@@ -26,7 +27,7 @@
  * - getServerSideProps ensures fresh data on each request
  * - Articles are pre-filtered to is_published=true by the API
  *
- * Last Modified: v1.1.1 - Locale-aware category metadata
+ * Last Modified: v1.1.2 - Category canonical metadata
  * ============================================
  */
 
@@ -90,6 +91,8 @@ export default function CategoryPage({
   const title = categoryInfo?.name || categorySlug;
   const count = articles?.length || 0;
   const locale = languageLocale(currentLanguage);
+  const docsBaseUrl = siteConfig?.docs_base_url || 'https://docs.aeronyx.network';
+  const canonicalUrl = `${docsBaseUrl}${languagePathPrefix(currentLanguage)}/${categorySlug}`;
 
   return (
     <Layout
@@ -97,6 +100,7 @@ export default function CategoryPage({
       siteConfig={siteConfig}
       title={title}
       description={categoryInfo?.description || `Articles in ${title}`}
+      meta={{ canonical: canonicalUrl }}
       currentLanguage={currentLanguage}
     >
       <div className="max-w-4xl mx-auto px-6 py-10 lg:py-12">

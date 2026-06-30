@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Expose AeroNyx GEO/LLM summary at /llms.txt on the docs domain.
  * Modification Reason:
+ *   v1.0.8 - Preserve ?lang= when proxying to Django so multilingual
+ *     llms.txt entries expose localized GEO summaries.
  *   v1.0.7 - Added PeerStore lifecycle aggregation to the static fallback so
  *     GEO crawlers understand that Rust nodes now report aggregate accepted,
  *     refreshed, rejected, and upgraded peer lifecycle events without exposing
@@ -49,7 +51,8 @@
  * - Keep this route as text/plain, not HTML.
  * - The content is managed from Django Admin SiteConfig and published articles.
  *
- * Last Modified: v1.0.7 - PeerStore lifecycle fallback
+ * Last Modified: v1.0.8 - Multilingual llms.txt query passthrough
+ * Previous: v1.0.7 - PeerStore lifecycle fallback
  * Previous: v1.0.6 - Blind relay abuse guard fallback
  * Previous: v1.0.5 - Discovery restart recovery fallback
  * Previous: v1.0.4 - Node discovery relay foundation fallback
@@ -64,8 +67,15 @@ export default function LlmsTxt() {
   return null;
 }
 
-export async function getServerSideProps({ res }) {
+export async function getServerSideProps({ res, query }) {
   const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.aeronyx.network/api';
+  const lang = typeof query?.lang === 'string' ? query.lang : '';
+  const llmsParams = new URLSearchParams();
+  if (/^[A-Za-z-]+$/.test(lang)) {
+    llmsParams.set('lang', lang);
+  }
+  const llmsQuery = llmsParams.toString();
+  const llmsUrl = `${apiBase}/docs/llms.txt${llmsQuery ? `?${llmsQuery}` : ''}`;
   const fallback = `# AeroNyx Docs
 
 > AeroNyx is an open privacy protocol and product ecosystem for private routing, encrypted communication, encrypted storage, Memory Chain state records, Rust privacy nodes, signed peer discovery, PeerStore lifecycle aggregation, relay-foundation readiness, blind relay abuse protection, restart-recovery discovery gates, nodeboard operations, packet-runtime stability telemetry, and agent-to-agent encrypted services. Its blind-node invariant requires relay nodes and Memory Chain coordinators to handle only ciphertext and aggregate operational metadata.
@@ -126,7 +136,7 @@ AeroNyx documentation and public network statistics expose aggregate protocol an
 `;
 
   try {
-    const response = await fetch(`${apiBase}/docs/llms.txt`, {
+    const response = await fetch(llmsUrl, {
       headers: { Accept: 'text/plain' },
     });
     const text = response.ok ? await response.text() : fallback;

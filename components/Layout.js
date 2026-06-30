@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Wraps all pages with Header, Sidebar, and SearchModal
  * Modification Reason:
+ *   v1.2.2 - Support canonical URLs, robots hints, and og:url so SEO/GEO
+ *     metadata can be supplied by page-level routes without duplicating tags.
  *   v1.2.1 - Avoid duplicating the docs site name when article meta_title
  *     already includes the brand suffix supplied by the backend.
  *   v1.2.0 - Thread currentLanguage through Header, Sidebar, and SearchModal
@@ -35,7 +37,7 @@
  * - Each page should pass categoryTree and siteConfig as props to Layout
  * - Layout does NOT fetch data itself
  *
- * Last Modified: v1.2.1 - SEO title suffix de-duplication
+ * Last Modified: v1.2.2 - Canonical and robots metadata support
  * ============================================
  */
 
@@ -81,12 +83,15 @@ export default function Layout({
         {(meta.keywords || siteConfig?.seo_keywords) && (
           <meta name="keywords" content={meta.keywords || siteConfig.seo_keywords} />
         )}
+        {meta.robots && <meta name="robots" content={meta.robots} />}
+        {meta.canonical && <link rel="canonical" href={meta.canonical} />}
 
         {/* Open Graph */}
         <meta property="og:title" content={fullTitle} />
         <meta property="og:description" content={description || defaultDescription} />
         <meta property="og:type" content="article" />
         <meta property="og:site_name" content={siteName} />
+        {meta.canonical && <meta property="og:url" content={meta.canonical} />}
         {meta.image && <meta property="og:image" content={meta.image} />}
 
         {/* Twitter */}

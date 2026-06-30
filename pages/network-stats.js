@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Provide a GEO-friendly public data page for AeroNyx network metrics.
  * Modification Reason:
+ *   v1.2.1 - Add canonical metadata because this public statistics page is a
+ *     primary GEO citation target for AI search engines.
  *   v1.2.0 - Added protocol synchronization and PeerStore lifecycle metrics
  *     from protocol_status.peer_store.peer_lifecycle. The page now documents
  *     how Rust privacy nodes discover, accept, refresh, reject, and recover
@@ -33,7 +35,7 @@
  * - Keep this page factual and citation-friendly.
  * - Do not add client IPs, destinations, DNS contents, domains, URLs, or payload data.
  *
- * Last Modified: v1.2.0 - Add protocol synchronization metrics
+ * Last Modified: v1.2.1 - Network stats canonical metadata
  * Previous: v1.1.0 - Use privacy protocol terminology on public stats
  * Previous: v1.0.0 - Initial public network stats page
  * ============================================
@@ -79,6 +81,7 @@ function Metric({ icon: Icon, label, value, detail }) {
 }
 
 export default function NetworkStatsPage({ siteConfig, categoryTree, stats }) {
+  const docsBaseUrl = siteConfig?.docs_base_url || 'https://docs.aeronyx.network';
   const network = stats?.network || {};
   const traffic = stats?.encrypted_traffic || {};
   const forwarding = stats?.encrypted_message_forwarding || {};
@@ -98,6 +101,7 @@ export default function NetworkStatsPage({ siteConfig, categoryTree, stats }) {
       description="Public aggregate AeroNyx privacy protocol statistics for encrypted traffic, encrypted message forwarding, node coverage, and availability."
       meta={{
         keywords: 'AeroNyx network stats, encrypted traffic, privacy nodes, privacy protocol metrics',
+        canonical: `${docsBaseUrl}/network-stats`,
       }}
     >
       <div className="max-w-5xl mx-auto px-6 py-10 lg:py-14">

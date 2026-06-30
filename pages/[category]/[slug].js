@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Article detail page with full Markdown rendering
  * Modification Reason:
+ *   v1.1.3 - Add self-referencing canonical URLs and JSON-LD structured data
+ *     for article and breadcrumb discovery.
  *   v1.1.2 - Localize article metadata dates so translated pages do not keep
  *     English month names in the byline.
  *   v1.1.1 - Stabilized TOC memoization and removed article-level
@@ -34,7 +36,7 @@
  * - BUG FIX: prev/next links now use article.category_slug (from API)
  *   instead of the URL categorySlug param, since articles might change category
  *
- * Last Modified: v1.1.2 - Locale-aware article metadata
+ * Last Modified: v1.1.3 - Article canonical and structured data
  * ============================================
  */
 
@@ -182,6 +184,53 @@ export default function ArticlePage({
 
   // BUG FIX (v1.0.1): Use article's own category_slug for prev/next links
   const articleCatSlug = article.category_slug || categorySlug;
+  const docsBaseUrl = siteConfig?.docs_base_url || 'https://docs.aeronyx.network';
+  const canonicalSlug = article.canonical_slug || article.translation_key || article.slug;
+  const canonicalUrl = `${docsBaseUrl}${languagePathPrefix(currentLanguage)}/${articleCatSlug}/${canonicalSlug}`;
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: copy.docs,
+        item: `${docsBaseUrl}${languagePathPrefix(currentLanguage) || '/'}`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: article.category_name || articleCatSlug,
+        item: `${docsBaseUrl}${languagePathPrefix(currentLanguage)}/${articleCatSlug}`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: article.title,
+        item: canonicalUrl,
+      },
+    ],
+  };
+  const articleJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle',
+    headline: article.title,
+    description: article.meta_description || article.summary,
+    inLanguage: currentLanguage,
+    datePublished: article.published_at,
+    dateModified: article.updated_at || article.published_at,
+    author: {
+      '@type': 'Organization',
+      name: article.author_name || 'AeroNyx',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'AeroNyx',
+      url: 'https://aeronyx.network',
+    },
+    mainEntityOfPage: canonicalUrl,
+    url: canonicalUrl,
+  };
 
   return (
     <Layout
@@ -193,25 +242,32 @@ export default function ArticlePage({
       meta={{
         keywords: article.meta_keywords,
         image: article.cover_image,
+        canonical: canonicalUrl,
       }}
     >
       <Head>
         {SUPPORTED_LANGUAGES.map((language) => {
-          const canonicalSlug = article.canonical_slug || article.translation_key || article.slug;
-          const baseUrl = siteConfig?.docs_base_url || 'https://docs.aeronyx.network';
           return (
             <link
               key={language.code}
               rel="alternate"
               hrefLang={language.code}
-              href={`${baseUrl}${languagePathPrefix(language.code)}/${articleCatSlug}/${canonicalSlug}`}
+              href={`${docsBaseUrl}${languagePathPrefix(language.code)}/${articleCatSlug}/${canonicalSlug}`}
             />
           );
         })}
         <link
           rel="alternate"
           hrefLang="x-default"
-          href={`${siteConfig?.docs_base_url || 'https://docs.aeronyx.network'}/${articleCatSlug}/${article.canonical_slug || article.translation_key || article.slug}`}
+          href={`${docsBaseUrl}/${articleCatSlug}/${canonicalSlug}`}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
         />
       </Head>
 

@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Category page showing article list for a given category
  * Modification Reason:
+ *   v1.1.1 - Localize article metadata dates and view counters on category
+ *     pages so non-English routes do not show English-only chrome.
  *   v1.1.0 - Pass SiteConfig into Layout for admin-controlled SEO/header.
  *   v1.0.1 - Added file path in header, improved loading
  *   state, better empty state design, article count in header
@@ -24,7 +26,7 @@
  * - getServerSideProps ensures fresh data on each request
  * - Articles are pre-filtered to is_published=true by the API
  *
- * Last Modified: v1.1.0 - SiteConfig support
+ * Last Modified: v1.1.1 - Locale-aware category metadata
  * ============================================
  */
 
@@ -42,6 +44,7 @@ import {
   fetchCategoryTree,
   fetchArticleList,
   getUiCopy,
+  languageLocale,
   languagePathPrefix,
   normalizeLanguage,
 } from '../../lib/api';
@@ -86,6 +89,7 @@ export default function CategoryPage({
 
   const title = categoryInfo?.name || categorySlug;
   const count = articles?.length || 0;
+  const locale = languageLocale(currentLanguage);
 
   return (
     <Layout
@@ -158,7 +162,7 @@ export default function CategoryPage({
                       {article.published_at && (
                         <span className="flex items-center gap-1">
                           <Clock size={10} />
-                          {new Date(article.published_at).toLocaleDateString('en-US', {
+                          {new Date(article.published_at).toLocaleDateString(locale, {
                             month: 'short', day: 'numeric',
                           })}
                         </span>
@@ -166,7 +170,7 @@ export default function CategoryPage({
                       {article.view_count > 0 && (
                         <span className="flex items-center gap-1">
                           <Eye size={10} />
-                          {article.view_count}
+                          {copy.views(article.view_count)}
                         </span>
                       )}
                     </div>

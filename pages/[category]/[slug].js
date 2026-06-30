@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Article detail page with full Markdown rendering
  * Modification Reason:
+ *   v1.1.2 - Localize article metadata dates so translated pages do not keep
+ *     English month names in the byline.
  *   v1.1.1 - Stabilized TOC memoization and removed article-level
  *   framer-motion wrapper to prevent client-side route cancellation /
  *   removeChild crashes during markdown page navigation.
@@ -32,7 +34,7 @@
  * - BUG FIX: prev/next links now use article.category_slug (from API)
  *   instead of the URL categorySlug param, since articles might change category
  *
- * Last Modified: v1.1.1 - Stable article DOM during client navigation
+ * Last Modified: v1.1.2 - Locale-aware article metadata
  * ============================================
  */
 
@@ -52,6 +54,7 @@ import {
   fetchArticleBySlug,
   fetchCategoryTree,
   getUiCopy,
+  languageLocale,
   languagePathPrefix,
   normalizeLanguage,
 } from '../../lib/api';
@@ -93,6 +96,7 @@ export default function ArticlePage({
     [article?.content]
   );
   const readTime = article?.content ? estimateReadTime(article.content) : 0;
+  const locale = languageLocale(currentLanguage);
 
   if (pageKind === 'category') {
     return (
@@ -275,7 +279,7 @@ export default function ArticlePage({
             {article.published_at && (
               <span className="flex items-center gap-1.5">
                 <Clock size={11} />
-                {new Date(article.published_at).toLocaleDateString('en-US', {
+                {new Date(article.published_at).toLocaleDateString(locale, {
                   year: 'numeric', month: 'long', day: 'numeric',
                 })}
               </span>

@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Wraps all pages with Header, Sidebar, and SearchModal
  * Modification Reason:
+ *   v1.2.1 - Avoid duplicating the docs site name when article meta_title
+ *     already includes the brand suffix supplied by the backend.
  *   v1.2.0 - Thread currentLanguage through Header, Sidebar, and SearchModal
  *     so multilingual routes keep navigation/search in the selected language.
  *   v1.1.0 - Accept siteConfig from Django docs admin for SEO site name,
@@ -33,7 +35,7 @@
  * - Each page should pass categoryTree and siteConfig as props to Layout
  * - Layout does NOT fetch data itself
  *
- * Last Modified: v1.2.0 - Multilingual layout wiring
+ * Last Modified: v1.2.1 - SEO title suffix de-duplication
  * ============================================
  */
 
@@ -62,7 +64,14 @@ export default function Layout({
 
   const siteName = siteConfig?.site_name || 'AeroNyx Docs';
   const defaultDescription = siteConfig?.seo_description || description;
-  const fullTitle = title === siteName || title === 'AeroNyx Docs' ? siteName : `${title} — ${siteName}`;
+  const normalizedTitle = (title || siteName).trim();
+  const fullTitle =
+    normalizedTitle === siteName ||
+    normalizedTitle === 'AeroNyx Docs' ||
+    normalizedTitle.endsWith(`| ${siteName}`) ||
+    normalizedTitle.endsWith(`— ${siteName}`)
+      ? normalizedTitle
+      : `${normalizedTitle} — ${siteName}`;
 
   return (
     <>

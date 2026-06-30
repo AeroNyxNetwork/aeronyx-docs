@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Expose AeroNyx GEO/LLM summary at /llms.txt on the docs domain.
  * Modification Reason:
+ *   v1.0.9 - Parse ?lang= from req.url as a Vercel-safe fallback because
+ *     extension-style routes may not reliably hydrate context.query.
  *   v1.0.8 - Preserve ?lang= when proxying to Django so multilingual
  *     llms.txt entries expose localized GEO summaries.
  *   v1.0.7 - Added PeerStore lifecycle aggregation to the static fallback so
@@ -51,7 +53,8 @@
  * - Keep this route as text/plain, not HTML.
  * - The content is managed from Django Admin SiteConfig and published articles.
  *
- * Last Modified: v1.0.8 - Multilingual llms.txt query passthrough
+ * Last Modified: v1.0.9 - Vercel-safe llms.txt lang parsing
+ * Previous: v1.0.8 - Multilingual llms.txt query passthrough
  * Previous: v1.0.7 - PeerStore lifecycle fallback
  * Previous: v1.0.6 - Blind relay abuse guard fallback
  * Previous: v1.0.5 - Discovery restart recovery fallback
@@ -67,9 +70,16 @@ export default function LlmsTxt() {
   return null;
 }
 
-export async function getServerSideProps({ res, query }) {
+export async function getServerSideProps({ req, res, query }) {
   const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.aeronyx.network/api';
-  const lang = typeof query?.lang === 'string' ? query.lang : '';
+  let lang = typeof query?.lang === 'string' ? query.lang : '';
+  if (!lang && req?.url) {
+    try {
+      lang = new URL(req.url, 'https://docs.aeronyx.network').searchParams.get('lang') || '';
+    } catch {
+      lang = '';
+    }
+  }
   const llmsParams = new URLSearchParams();
   if (/^[A-Za-z-]+$/.test(lang)) {
     llmsParams.set('lang', lang);

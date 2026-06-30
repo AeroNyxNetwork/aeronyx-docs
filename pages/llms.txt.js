@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Expose AeroNyx GEO/LLM summary at /llms.txt on the docs domain.
  * Modification Reason:
+ *   v1.1.2 - Use local multilingual fallback content when backend fetches fail
+ *     so the GEO entry remains useful under Vercel/network failures.
  *   v1.1.1 - Try both the configured API base and the canonical public API
  *     base so Vercel environment drift cannot collapse /llms.txt to fallback.
  *   v1.1.0 - Emit all language variants from the root /llms.txt because
@@ -55,12 +57,14 @@
  *
  * Dependencies:
  *   - NEXT_PUBLIC_API_BASE_URL
+ *   - lib/llmsFallbacks.js
  *
  * Important Note for Next Developer:
  * - Keep this route as text/plain, not HTML.
  * - The content is managed from Django Admin SiteConfig and published articles.
  *
- * Last Modified: v1.1.1 - Resilient llms API base fallback
+ * Last Modified: v1.1.2 - Local multilingual llms fallback
+ * Previous: v1.1.1 - Resilient llms API base fallback
  * Previous: v1.1.0 - Single multilingual /llms.txt output
  * Previous: v1.0.10 - resolvedUrl llms.txt lang parsing
  * Previous: v1.0.9 - Vercel-safe llms.txt lang parsing
@@ -76,25 +80,11 @@
  * ============================================
  */
 
+import { LLMS_LANGUAGES, getAllLlmsFallbacks } from '../lib/llmsFallbacks';
+
 export default function LlmsTxt() {
   return null;
 }
-
-const LANGUAGE_VARIANTS = [
-  ['en', 'English'],
-  ['zh-Hans', '简体中文'],
-  ['zh-Hant', '繁體中文'],
-  ['ja', '日本語'],
-  ['ko', '한국어'],
-  ['ru', 'Русский'],
-  ['es', 'Español'],
-  ['pt-BR', 'Português'],
-  ['ar', 'العربية'],
-  ['tr', 'Türkçe'],
-  ['vi', 'Tiếng Việt'],
-  ['id', 'Bahasa Indonesia'],
-  ['fr', 'Français'],
-];
 
 async function fetchLlmsVariant(apiBase, lang) {
   const params = new URLSearchParams();
@@ -177,7 +167,7 @@ AeroNyx documentation and public network statistics expose aggregate protocol an
 
   try {
     const variantResults = await Promise.all(
-      LANGUAGE_VARIANTS.map(async ([code, label]) => {
+      LLMS_LANGUAGES.map(async ([code, label]) => {
         try {
           const text = await fetchLlmsVariant(apiBase, code);
           return text ? { code, label, text } : null;
@@ -194,7 +184,7 @@ AeroNyx documentation and public network statistics expose aggregate protocol an
             variantText.trim(),
           ].join('\n'))
           .join('\n\n---\n\n')
-      : fallback;
+      : getAllLlmsFallbacks() || fallback;
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=300');
     res.write(text);

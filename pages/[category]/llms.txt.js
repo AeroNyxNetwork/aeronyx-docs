@@ -6,6 +6,7 @@
  * /zh-Hant/llms.txt while reusing the existing [category] dynamic route name
  * required by Next.js route sorting.
  * Modification Reason:
+ *   v1.0.2 - Use localized local fallback content when backend fetches fail.
  *   v1.0.1 - Try both configured and canonical public API bases so Vercel
  *     environment drift cannot collapse localized llms endpoints to fallback.
  *   v1.0.0 - Initial language-scoped llms.txt proxy route.
@@ -23,15 +24,19 @@
  *
  * Dependencies:
  *   - NEXT_PUBLIC_API_BASE_URL
+ *   - lib/llmsFallbacks.js
  *
  * Important Note for Next Developer:
  * - Keep this route as text/plain, not HTML.
  * - Next.js requires this file to use [category], not [language], because the
  *   docs app already has pages/[category]/[slug].js.
  *
- * Last Modified: v1.0.1 - Resilient localized llms API base fallback
+ * Last Modified: v1.0.2 - Localized local fallback content
+ * Previous: v1.0.1 - Resilient localized llms API base fallback
  * ============================================
  */
+
+import { getLlmsFallback } from '../../lib/llmsFallbacks';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.aeronyx.network/api';
 const SUPPORTED_LANGUAGES = new Set([
@@ -75,7 +80,7 @@ export async function getServerSideProps({ params, res }) {
   const query = lang ? `?${new URLSearchParams({ lang }).toString()}` : '';
 
   try {
-    const text = (await fetchLocalizedLlms(query)) || '# AeroNyx Docs\n';
+    const text = (await fetchLocalizedLlms(query)) || getLlmsFallback(lang || 'en');
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=300');
     res.write(text);
@@ -83,7 +88,7 @@ export async function getServerSideProps({ params, res }) {
   } catch {
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=60');
-    res.write('# AeroNyx Docs\n');
+    res.write(getLlmsFallback(lang || 'en'));
     res.end();
   }
 

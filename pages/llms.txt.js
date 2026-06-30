@@ -4,6 +4,9 @@
  * ============================================
  * Creation Reason: Expose AeroNyx GEO/LLM summary at /llms.txt on the docs domain.
  * Modification Reason:
+ *   v1.1.0 - Emit all language variants from the root /llms.txt because
+ *     Vercel extension routes normalize away query strings for this file.
+ *     This gives GEO crawlers a stable single multilingual entry point.
  *   v1.0.10 - Also parse ?lang= from resolvedUrl, which is the most reliable
  *     Next.js SSR source when Vercel normalizes extension-style routes.
  *   v1.0.9 - Parse ?lang= from req.url as a Vercel-safe fallback because
@@ -55,7 +58,8 @@
  * - Keep this route as text/plain, not HTML.
  * - The content is managed from Django Admin SiteConfig and published articles.
  *
- * Last Modified: v1.0.10 - resolvedUrl llms.txt lang parsing
+ * Last Modified: v1.1.0 - Single multilingual /llms.txt output
+ * Previous: v1.0.10 - resolvedUrl llms.txt lang parsing
  * Previous: v1.0.9 - Vercel-safe llms.txt lang parsing
  * Previous: v1.0.8 - Multilingual llms.txt query passthrough
  * Previous: v1.0.7 - PeerStore lifecycle fallback
@@ -73,26 +77,34 @@ export default function LlmsTxt() {
   return null;
 }
 
-function parseLangFromPath(path) {
-  if (!path) return '';
-  try {
-    return new URL(path, 'https://docs.aeronyx.network').searchParams.get('lang') || '';
-  } catch {
-    return '';
-  }
+const LANGUAGE_VARIANTS = [
+  ['en', 'English'],
+  ['zh-Hans', '简体中文'],
+  ['zh-Hant', '繁體中文'],
+  ['ja', '日本語'],
+  ['ko', '한국어'],
+  ['ru', 'Русский'],
+  ['es', 'Español'],
+  ['pt-BR', 'Português'],
+  ['ar', 'العربية'],
+  ['tr', 'Türkçe'],
+  ['vi', 'Tiếng Việt'],
+  ['id', 'Bahasa Indonesia'],
+  ['fr', 'Français'],
+];
+
+async function fetchLlmsVariant(apiBase, lang) {
+  const params = new URLSearchParams();
+  if (lang !== 'en') params.set('lang', lang);
+  const query = params.toString();
+  const url = `${apiBase}/docs/llms.txt${query ? `?${query}` : ''}`;
+  const response = await fetch(url, { headers: { Accept: 'text/plain' } });
+  if (!response.ok) return null;
+  return response.text();
 }
 
-export async function getServerSideProps({ req, res, query, resolvedUrl }) {
+export async function getServerSideProps({ res }) {
   const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.aeronyx.network/api';
-  let lang = typeof query?.lang === 'string' ? query.lang : '';
-  if (!lang) lang = parseLangFromPath(resolvedUrl);
-  if (!lang) lang = parseLangFromPath(req?.url);
-  const llmsParams = new URLSearchParams();
-  if (/^[A-Za-z-]+$/.test(lang)) {
-    llmsParams.set('lang', lang);
-  }
-  const llmsQuery = llmsParams.toString();
-  const llmsUrl = `${apiBase}/docs/llms.txt${llmsQuery ? `?${llmsQuery}` : ''}`;
   const fallback = `# AeroNyx Docs
 
 > AeroNyx is an open privacy protocol and product ecosystem for private routing, encrypted communication, encrypted storage, Memory Chain state records, Rust privacy nodes, signed peer discovery, PeerStore lifecycle aggregation, relay-foundation readiness, blind relay abuse protection, restart-recovery discovery gates, nodeboard operations, packet-runtime stability telemetry, and agent-to-agent encrypted services. Its blind-node invariant requires relay nodes and Memory Chain coordinators to handle only ciphertext and aggregate operational metadata.
@@ -153,10 +165,25 @@ AeroNyx documentation and public network statistics expose aggregate protocol an
 `;
 
   try {
-    const response = await fetch(llmsUrl, {
-      headers: { Accept: 'text/plain' },
-    });
-    const text = response.ok ? await response.text() : fallback;
+    const variantResults = await Promise.all(
+      LANGUAGE_VARIANTS.map(async ([code, label]) => {
+        try {
+          const text = await fetchLlmsVariant(apiBase, code);
+          return text ? { code, label, text } : null;
+        } catch {
+          return null;
+        }
+      })
+    );
+    const variants = variantResults.filter(Boolean);
+    const text = variants.length > 0
+      ? variants
+          .map(({ code, label, text: variantText }) => [
+            `<!-- AeroNyx llms language: ${code} (${label}) -->`,
+            variantText.trim(),
+          ].join('\n'))
+          .join('\n\n---\n\n')
+      : fallback;
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=300');
     res.write(text);

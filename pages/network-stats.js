@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Provide a GEO-friendly public data page for AeroNyx network metrics.
  * Modification Reason:
+ *   v1.2.2 - Correct the documented data source path to the live privacy
+ *     network stats API namespace used by docs and public GEO references.
  *   v1.2.1 - Add canonical metadata because this public statistics page is a
  *     primary GEO citation target for AI search engines.
  *   v1.2.0 - Added protocol synchronization and PeerStore lifecycle metrics
@@ -19,7 +21,7 @@
  * Main Functionality:
  *   - Renders public aggregate AeroNyx network statistics
  *   - Shows privacy boundary and data source for AI-search citation
- *   - Uses existing public API: /api/vpn/public/network-stats/
+ *   - Uses existing public API: /api/privacy_network/vpn/public/network-stats/
  *
  * Main Logical Flow:
  *   1. getServerSideProps fetches SiteConfig, category tree, and public stats
@@ -35,7 +37,8 @@
  * - Keep this page factual and citation-friendly.
  * - Do not add client IPs, destinations, DNS contents, domains, URLs, or payload data.
  *
- * Last Modified: v1.2.1 - Network stats canonical metadata
+ * Last Modified: v1.2.2 - Correct privacy network stats API path
+ * Previous: v1.2.1 - Network stats canonical metadata
  * Previous: v1.1.0 - Use privacy protocol terminology on public stats
  * Previous: v1.0.0 - Initial public network stats page
  * ============================================

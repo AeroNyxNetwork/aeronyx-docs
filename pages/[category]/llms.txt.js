@@ -6,6 +6,8 @@
  * /zh-Hant/llms.txt while reusing the existing [category] dynamic route name
  * required by Next.js route sorting.
  * Modification Reason:
+ *   v1.0.1 - Try both configured and canonical public API bases so Vercel
+ *     environment drift cannot collapse localized llms endpoints to fallback.
  *   v1.0.0 - Initial language-scoped llms.txt proxy route.
  *
  * Main Functionality:
@@ -27,7 +29,7 @@
  * - Next.js requires this file to use [category], not [language], because the
  *   docs app already has pages/[category]/[slug].js.
  *
- * Last Modified: v1.0.0 - Initial language-scoped llms.txt route
+ * Last Modified: v1.0.1 - Resilient localized llms API base fallback
  * ============================================
  */
 
@@ -51,16 +53,29 @@ export default function LocalizedLlmsTxt() {
   return null;
 }
 
+async function fetchLocalizedLlms(query) {
+  const apiBases = Array.from(new Set([API_BASE, 'https://api.aeronyx.network/api']));
+  for (const base of apiBases) {
+    const normalizedBase = String(base || '').replace(/\/+$/, '');
+    try {
+      const response = await fetch(`${normalizedBase}/docs/llms.txt${query}`, {
+        headers: { Accept: 'text/plain' },
+      });
+      if (response.ok) return response.text();
+    } catch {
+      // Try the next base URL.
+    }
+  }
+  return null;
+}
+
 export async function getServerSideProps({ params, res }) {
   const maybeLanguage = typeof params?.category === 'string' ? params.category : '';
   const lang = SUPPORTED_LANGUAGES.has(maybeLanguage) ? maybeLanguage : '';
   const query = lang ? `?${new URLSearchParams({ lang }).toString()}` : '';
 
   try {
-    const response = await fetch(`${API_BASE}/docs/llms.txt${query}`, {
-      headers: { Accept: 'text/plain' },
-    });
-    const text = response.ok ? await response.text() : '# AeroNyx Docs\n';
+    const text = (await fetchLocalizedLlms(query)) || '# AeroNyx Docs\n';
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=300');
     res.write(text);

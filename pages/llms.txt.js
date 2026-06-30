@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Expose AeroNyx GEO/LLM summary at /llms.txt on the docs domain.
  * Modification Reason:
+ *   v1.1.1 - Try both the configured API base and the canonical public API
+ *     base so Vercel environment drift cannot collapse /llms.txt to fallback.
  *   v1.1.0 - Emit all language variants from the root /llms.txt because
  *     Vercel extension routes normalize away query strings for this file.
  *     This gives GEO crawlers a stable single multilingual entry point.
@@ -58,7 +60,8 @@
  * - Keep this route as text/plain, not HTML.
  * - The content is managed from Django Admin SiteConfig and published articles.
  *
- * Last Modified: v1.1.0 - Single multilingual /llms.txt output
+ * Last Modified: v1.1.1 - Resilient llms API base fallback
+ * Previous: v1.1.0 - Single multilingual /llms.txt output
  * Previous: v1.0.10 - resolvedUrl llms.txt lang parsing
  * Previous: v1.0.9 - Vercel-safe llms.txt lang parsing
  * Previous: v1.0.8 - Multilingual llms.txt query passthrough
@@ -97,10 +100,18 @@ async function fetchLlmsVariant(apiBase, lang) {
   const params = new URLSearchParams();
   if (lang !== 'en') params.set('lang', lang);
   const query = params.toString();
-  const url = `${apiBase}/docs/llms.txt${query ? `?${query}` : ''}`;
-  const response = await fetch(url, { headers: { Accept: 'text/plain' } });
-  if (!response.ok) return null;
-  return response.text();
+  const apiBases = Array.from(new Set([apiBase, 'https://api.aeronyx.network/api']));
+  for (const base of apiBases) {
+    const normalizedBase = String(base || '').replace(/\/+$/, '');
+    const url = `${normalizedBase}/docs/llms.txt${query ? `?${query}` : ''}`;
+    try {
+      const response = await fetch(url, { headers: { Accept: 'text/plain' } });
+      if (response.ok) return response.text();
+    } catch {
+      // Try the next base URL.
+    }
+  }
+  return null;
 }
 
 export async function getServerSideProps({ res }) {

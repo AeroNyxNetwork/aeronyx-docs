@@ -5,6 +5,11 @@
  * Creation Reason: Global providers, styles, and fonts
  * Modification Reason: v1.0.1 - Added preload for critical fonts,
  *   meta charset, and error boundary consideration
+ * Modification Reason: v1.0.2 - Added complete docs icon metadata.
+ *   The docs shell referenced favicon.svg before the public icon assets
+ *   existed. The head now advertises SVG, ICO, PNG, Apple touch, and web
+ *   manifest assets so browser tabs, mobile bookmarks, and AI/browser preview
+ *   surfaces all show the AeroNyx brand mark.
  *
  * Dependencies: globals.css, Inter + JetBrains Mono fonts
  *
@@ -14,6 +19,7 @@
  * - All global CSS must be imported here
  *
  * Last Modified: v1.0.1 - Font preload + meta fixes
+ * Last Modified: v1.0.2 - Complete docs icon metadata
  * ============================================
  */
 
@@ -36,9 +42,13 @@ export default function App({ Component, pageProps }) {
           rel="stylesheet"
         />
 
-        {/* Favicon */}
+        {/* Favicon / install metadata */}
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/favicon.svg" />
+        <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+        <link rel="icon" href="/favicon-32x32.png" sizes="32x32" type="image/png" />
+        <link rel="shortcut icon" href="/favicon-16x16.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+        <link rel="manifest" href="/site.webmanifest" />
       </Head>
       <Component {...pageProps} />
     </>

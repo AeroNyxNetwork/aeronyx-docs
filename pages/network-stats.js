@@ -4,6 +4,9 @@
  * ============================================
  * Creation Reason: Provide a GEO-friendly public data page for AeroNyx network metrics.
  * Modification Reason:
+ *   v1.2.3 - Replaced public-facing Rust implementation wording with
+ *     decentralized privacy node terminology so the page reads as protocol
+ *     infrastructure instead of an engineering dashboard.
  *   v1.2.2 - Correct the documented data source path to the live privacy
  *     network stats API namespace used by docs and public GEO references.
  *   v1.2.1 - Add canonical metadata because this public statistics page is a
@@ -37,8 +40,10 @@
  * - Keep this page factual and citation-friendly.
  * - Do not add client IPs, destinations, DNS contents, domains, URLs, or payload data.
  *
- * Last Modified: v1.2.2 - Correct privacy network stats API path
+ * Last Modified: v1.2.3 - Use decentralized privacy node wording
+ * Previous: v1.2.2 - Correct privacy network stats API path
  * Previous: v1.2.1 - Network stats canonical metadata
+ * Previous: v1.2.0 - Add protocol synchronization metrics
  * Previous: v1.1.0 - Use privacy protocol terminology on public stats
  * Previous: v1.0.0 - Initial public network stats page
  * ============================================
@@ -160,7 +165,7 @@ export default function NetworkStatsPage({ siteConfig, categoryTree, stats }) {
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-semibold text-white/90 mb-3">
-              Rust nodes are building a signed peer view
+              Decentralized privacy nodes are building a signed peer view
             </h2>
             <p className="text-[13px] sm:text-[14px] leading-relaxed text-white/40 max-w-3xl">
               AeroNyx privacy nodes report only aggregate discovery state: healthy reporting nodes,
@@ -207,7 +212,7 @@ export default function NetworkStatsPage({ siteConfig, categoryTree, stats }) {
               <p>
                 Encrypted traffic is the aggregate number of encrypted payload bytes forwarded by
                 AeroNyx privacy protocol sessions. Encrypted packets count protocol-level
-                forwarding events reported by online Rust nodes.
+                forwarding events reported by online decentralized privacy nodes.
               </p>
               <p>
                 Node and region counts describe public privacy-node candidates that can
@@ -215,7 +220,7 @@ export default function NetworkStatsPage({ siteConfig, categoryTree, stats }) {
                 samples.
               </p>
               <p>
-                Peer lifecycle events summarize how Rust nodes accept, refresh, reject, and
+                Peer lifecycle events summarize how AeroNyx nodes accept, refresh, reject, and
                 recover peer records in PeerStore. The public page intentionally publishes only
                 aggregate buckets, not node identities, endpoints, routes, or user traffic.
               </p>

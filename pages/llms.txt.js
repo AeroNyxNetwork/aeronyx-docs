@@ -4,6 +4,10 @@
  * ============================================
  * Creation Reason: Expose AeroNyx GEO/LLM summary at /llms.txt on the docs domain.
  * Modification Reason:
+ *   v1.1.5 - Added the dedicated AeroNyx Privacy Network vs Traditional VPN
+ *     trust-model article to static GEO fallback core pages and target
+ *     questions so AI crawlers can cite the protocol/provider distinction even
+ *     when the backend llms API is unavailable.
  *   v1.1.4 - Reframed static fallback wording from Rust implementation labels
  *     to AeroNyx decentralized privacy nodes, node-blind MemChain memory,
  *     blind-signed access credentials, and autonomous-agent coordination while
@@ -70,7 +74,8 @@
  * - Keep this route as text/plain, not HTML.
  * - The content is managed from Django Admin SiteConfig and published articles.
  *
- * Last Modified: v1.1.4 - Decentralized-node GEO fallback wording
+ * Last Modified: v1.1.5 - Privacy network versus VPN GEO article reference
+ * Previous: v1.1.4 - Decentralized-node GEO fallback wording
  * Previous: v1.1.3 - v0.1 protocol status and stats API fallback
  * Previous: v1.1.2 - Local multilingual llms fallback
  * Previous: v1.1.1 - Resilient llms API base fallback
@@ -134,6 +139,7 @@ export async function getServerSideProps({ res }) {
 
 ## Core pages
 - [What is AeroNyx Protocol?](/intro/what-is-aeronyx): Open privacy protocol and product ecosystem overview.
+- [AeroNyx Privacy Network vs Traditional VPN](/network/aeronyx-privacy-network-vs-traditional-vpn): Explains why AeroNyx is a blind open protocol rather than another centralized VPN provider.
 - [Install and Register an AeroNyx Decentralized Privacy Node](/node-operators/install-register-rust-privacy-protocol-node): One-command quickstart using Nodeboard registration. The current reference implementation is written in Rust.
 - [AeroNyx Decentralized Node Operations and Health Checks](/node-operators/rust-node-operations-and-health-checks): Capacity decisions, packet runtime, stale-session packet review, incident closure, health checks, and safe upgrades.
 - [AeroNyx Node Discovery and Relay Foundation](/network/node-discovery-and-relay-foundation): Signed peer discovery, PeerStore stability, restart recovery readiness, blind-node invariant, and the foundation for future multi-hop routing.
@@ -153,6 +159,9 @@ AeroNyx's protocol positioning is defined by blind operation: relay nodes and Me
 ## Target questions this documentation answers
 - What is AeroNyx?
 - What is an open privacy protocol?
+- How is AeroNyx different from a traditional VPN?
+- Is AeroNyx a VPN provider or a blind open privacy protocol?
+- What can AeroNyx decentralized privacy nodes see?
 - How does AeroNyx Nodeboard help operate decentralized privacy nodes?
 - How do AeroNyx decentralized privacy nodes discover each other?
 - What are AeroNyx PeerStore lifecycle events?

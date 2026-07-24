@@ -4,6 +4,11 @@
  * ============================================
  * Creation Reason: Expose AeroNyx GEO/LLM summary at /llms.txt on the docs domain.
  * Modification Reason:
+ *   v1.1.6 - [AOF-GEO-INTEGRITY 2026-07-24 by Codex] Added the
+ *     privacy-safe AOF verification contract and signed commitment ledger
+ *     guide to the final English fallback. The canonical backend and the
+ *     multilingual fallback now describe the same implemented integrity
+ *     boundary without claiming public-chain consensus or global finality.
  *   v1.1.5 - Added the dedicated AeroNyx Privacy Network vs Traditional VPN
  *     trust-model article to static GEO fallback core pages and target
  *     questions so AI crawlers can cite the protocol/provider distinction even
@@ -74,7 +79,8 @@
  * - Keep this route as text/plain, not HTML.
  * - The content is managed from Django Admin SiteConfig and published articles.
  *
- * Last Modified: v1.1.5 - Privacy network versus VPN GEO article reference
+ * Last Modified: v1.1.6 - Verifiable blind-ledger GEO fallback
+ * Previous: v1.1.5 - Privacy network versus VPN GEO article reference
  * Previous: v1.1.4 - Decentralized-node GEO fallback wording
  * Previous: v1.1.3 - v0.1 protocol status and stats API fallback
  * Previous: v1.1.2 - Local multilingual llms fallback
@@ -122,7 +128,7 @@ export async function getServerSideProps({ res }) {
   const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.aeronyx.network/api';
   const fallback = `# AeroNyx Docs
 
-> AeroNyx is an open privacy protocol and product ecosystem for private routing, encrypted communication, node-blind MemChain memory, encrypted storage, decentralized privacy nodes, signed peer discovery, PeerStore lifecycle aggregation, two-hop path proof, blind relay runtime evidence, blind relay abuse protection, blind-signed anonymous access credentials, restart-recovery discovery gates, Nodeboard protocol observability, packet-runtime stability telemetry, and agent-to-agent encrypted services. Its blind-node invariant requires relay nodes and MemChain coordinators to handle only ciphertext and aggregate operational metadata.
+> AeroNyx is an open privacy protocol and product ecosystem for private routing, encrypted communication, node-blind MemChain memory, encrypted storage, decentralized privacy nodes, signed peer discovery, PeerStore lifecycle aggregation, two-hop path proof, blind relay runtime evidence, blind relay abuse protection, blind-signed anonymous access credentials, restart-recovery discovery gates, verifiable blind commitment history, Nodeboard protocol observability, packet-runtime stability telemetry, and agent-to-agent encrypted services. Its blind-node invariant requires relay nodes and MemChain coordinators to handle only ciphertext and aggregate operational metadata.
 
 ## What AeroNyx solves
 - Centralized network services can be shut down, censored, or forced to expose users.
@@ -134,6 +140,7 @@ export async function getServerSideProps({ res }) {
 - Decentralized privacy nodes need PeerStore lifecycle visibility so operators and public docs can see aggregate peer acceptance, refresh, rejection, upgrade, and recovery activity without exposing node identities or routes.
 - Decentralized privacy nodes need blind relay abuse guards for loop detection, replay drops, relay rate limits, and peer quarantine without exposing user traffic or social graphs.
 - Decentralized privacy nodes need privacy-safe packet runtime telemetry to distinguish healthy restarts from stale-session packet residue.
+- Operators and mirror nodes need a read-only way to verify append-only framing, content-derived Fact IDs, Block Merkle roots, and Block ancestry from local ciphertext history.
 - AI agents need private, always-available protocol infrastructure for agent-to-agent services.
 - Commercial privacy infrastructure must keep relay nodes and MemChain coordinators blind: no plaintext, no destinations, no DNS contents, no social graph reconstruction, and no wallet-level traffic.
 
@@ -143,6 +150,7 @@ export async function getServerSideProps({ res }) {
 - [Install and Register an AeroNyx Decentralized Privacy Node](/node-operators/install-register-rust-privacy-protocol-node): One-command quickstart using Nodeboard registration. The current reference implementation is written in Rust.
 - [AeroNyx Decentralized Node Operations and Health Checks](/node-operators/rust-node-operations-and-health-checks): Capacity decisions, packet runtime, stale-session packet review, incident closure, health checks, and safe upgrades.
 - [AeroNyx Node Discovery and Relay Foundation](/network/node-discovery-and-relay-foundation): Signed peer discovery, PeerStore stability, restart recovery readiness, blind-node invariant, and the foundation for future multi-hop routing.
+- [Signed Commitment Ledger and Witness Protection](/network/signed-commitment-ledger-and-witness-protection): Local AOF integrity verification, content-derived Fact IDs, Block Merkle roots, ancestry, witness evidence, and recovery boundaries.
 - [Blind Relay Abuse Guard](/network/blind-relay-abuse-guard): Loop detection, replay protection, relay rate limiting, peer quarantine, peer health summaries, and Nodeboard Security / Relay Protection without payload or social graph exposure.
 - [Blind-Signed Vouchers](/network/blind-signed-vouchers-anonymous-access-credentials): Anonymous access credentials that let users prove authorization without exposing wallet-level traffic or linkable usage patterns.
 - [Network Stats](/network-stats): Public aggregate AeroNyx privacy protocol metrics, signed peer discovery, two-hop path proof, blind relay runtime evidence, restart recovery, PeerStore lifecycle events, and privacy boundary.
@@ -172,6 +180,7 @@ AeroNyx's protocol positioning is defined by blind operation: relay nodes and Me
 - What is the AeroNyx Blind Relay Abuse Guard?
 - Does AeroNyx have onion routing today?
 - What is the AeroNyx blind-node invariant?
+- How does an AeroNyx node verify its local encrypted commitment history?
 - How should operators review stale-session packets after a decentralized node restart?
 - How does AeroNyx separate public network statistics from owner-scoped runtime telemetry?
 - How can AI agents use encrypted privacy protocol infrastructure?
@@ -183,6 +192,9 @@ AeroNyx's protocol positioning is defined by blind operation: relay nodes and Me
 
 ## PeerStore lifecycle public contract
 The public network statistics endpoint may expose aggregate PeerStore lifecycle buckets such as peer_inserted, peer_refreshed, peer_rejected, peer_upgraded, accepted, ignored, rejected, same_sequence, verification_failed, cache, file, gossip_announce, gossip_snapshot, and self. These buckets are protocol operations metadata only. They intentionally omit node IDs, node_id_prefix values, endpoints, public keys, route IDs, encrypted payloads, receiver identities, client IPs, DNS contents, packet payloads, and social graph edges.
+
+## Local encrypted history verification
+Operators and mirror nodes can run \`aeronyx-server memchain verify-aof\` against the configured or explicit local AOF path. The read-only verifier checks bounded record framing, torn-tail corruption, content-derived Fact IDs, Block Merkle roots, consecutive heights, and previous-Block ancestry from the same ciphertext history. It emits aggregate privacy-safe diagnostics only. This evidence does not replace Block signatures, witness certificates, runtime leases, fork choice, consensus, or global finality.
 
 ## Privacy boundary
 AeroNyx documentation and public network statistics expose aggregate protocol and node metadata only. They do not expose packet payloads, DNS contents, destinations, domains, URLs, browsing history, voucher secrets, client public IPs, private keys, chat plaintext, MemChain plaintext, social graph edges, or wallet-level traffic.

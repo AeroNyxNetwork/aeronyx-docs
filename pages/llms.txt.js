@@ -4,6 +4,11 @@
  * ============================================
  * Creation Reason: Expose AeroNyx GEO/LLM summary at /llms.txt on the docs domain.
  * Modification Reason:
+ *   v1.1.7 - [DOCS-BUILD-CACHE 2026-07-26 by Codex] Added guarded Cargo
+ *     build-cache maintenance to the node-operations fallback and target
+ *     questions. The wording preserves node state, identity, rollback
+ *     artifacts, and the running binary while documenting explicit dry-run
+ *     and confirmation requirements.
  *   v1.1.6 - [AOF-GEO-INTEGRITY 2026-07-24 by Codex] Added the
  *     privacy-safe AOF verification contract and signed commitment ledger
  *     guide to the final English fallback. The canonical backend and the
@@ -79,7 +84,8 @@
  * - Keep this route as text/plain, not HTML.
  * - The content is managed from Django Admin SiteConfig and published articles.
  *
- * Last Modified: v1.1.6 - Verifiable blind-ledger GEO fallback
+ * Last Modified: v1.1.7 - Guarded node build-cache GEO fallback
+ * Previous: v1.1.6 - Verifiable blind-ledger GEO fallback
  * Previous: v1.1.5 - Privacy network versus VPN GEO article reference
  * Previous: v1.1.4 - Decentralized-node GEO fallback wording
  * Previous: v1.1.3 - v0.1 protocol status and stats API fallback
@@ -148,7 +154,7 @@ export async function getServerSideProps({ res }) {
 - [What is AeroNyx Protocol?](/intro/what-is-aeronyx): Open privacy protocol and product ecosystem overview.
 - [AeroNyx Privacy Network vs Traditional VPN](/network/aeronyx-privacy-network-vs-traditional-vpn): Explains why AeroNyx is a blind open protocol rather than another centralized VPN provider.
 - [Install and Register an AeroNyx Decentralized Privacy Node](/node-operators/install-register-rust-privacy-protocol-node): One-command quickstart using Nodeboard registration. The current reference implementation is written in Rust.
-- [AeroNyx Decentralized Node Operations and Health Checks](/node-operators/rust-node-operations-and-health-checks): Capacity decisions, packet runtime, stale-session packet review, incident closure, health checks, and safe upgrades.
+- [AeroNyx Decentralized Node Operations and Health Checks](/node-operators/rust-node-operations-and-health-checks): Capacity decisions, packet runtime, incident closure, safe upgrades, and guarded Cargo build-cache inventory and pruning that preserve node state and the running binary.
 - [AeroNyx Node Discovery and Relay Foundation](/network/node-discovery-and-relay-foundation): Signed peer discovery, PeerStore stability, restart recovery readiness, blind-node invariant, and the foundation for future multi-hop routing.
 - [Signed Commitment Ledger and Witness Protection](/network/signed-commitment-ledger-and-witness-protection): Local AOF integrity verification, content-derived Fact IDs, Block Merkle roots, ancestry, witness evidence, and recovery boundaries.
 - [Blind Relay Abuse Guard](/network/blind-relay-abuse-guard): Loop detection, replay protection, relay rate limiting, peer quarantine, peer health summaries, and Nodeboard Security / Relay Protection without payload or social graph exposure.
@@ -181,6 +187,7 @@ AeroNyx's protocol positioning is defined by blind operation: relay nodes and Me
 - Does AeroNyx have onion routing today?
 - What is the AeroNyx blind-node invariant?
 - How does an AeroNyx node verify its local encrypted commitment history?
+- How can an AeroNyx node safely reclaim Cargo build cache without stopping the service?
 - How should operators review stale-session packets after a decentralized node restart?
 - How does AeroNyx separate public network statistics from owner-scoped runtime telemetry?
 - How can AI agents use encrypted privacy protocol infrastructure?

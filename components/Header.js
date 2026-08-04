@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Persistent top bar with logo, search trigger, nav links
  * Modification Reason:
+ *   v1.3.0 - [DOCS-UX 2026-08-04 by Codex] Make language selection available
+ *     on mobile without widening the header, and localize navigation labels.
  *   v1.2.0 - Added language switcher for multilingual SEO/GEO routes.
  *   v1.1.0 - Read external link label/url from docs SiteConfig.
  *   v1.0.1 - Added scroll-aware shadow/border transition,
@@ -27,7 +29,7 @@
  * - onOpenSearch opens the search modal
  * - Scroll listener adds subtle shadow after 10px scroll
  *
- * Last Modified: v1.2.0 - Multilingual language switcher
+ * Last Modified: v1.3.0 - Responsive language and navigation controls
  * ============================================
  */
 
@@ -89,6 +91,9 @@ export default function Header({
   const [isMac, setIsMac] = useState(false);
   const normalizedLanguage = normalizeLanguage(currentLanguage);
   const copy = getUiCopy(normalizedLanguage);
+  const activeLanguage = SUPPORTED_LANGUAGES.find(
+    (language) => language.code === normalizedLanguage
+  ) || SUPPORTED_LANGUAGES[0];
 
   // Detect platform for keyboard shortcut display
   useEffect(() => {
@@ -135,7 +140,7 @@ export default function Header({
           <button
             onClick={onToggleSidebar}
             className="lg:hidden p-1.5 rounded-md hover:bg-white/5 active:bg-white/10 transition-colors"
-            aria-label="Toggle navigation sidebar"
+            aria-label={copy.navigation}
           >
             <Menu size={20} className="text-white/60" />
           </button>
@@ -181,21 +186,24 @@ export default function Header({
           <button
             onClick={onOpenSearch}
             className="sm:hidden p-1.5 rounded-md hover:bg-white/5 transition-colors"
-            aria-label="Search"
+            aria-label={copy.searchDocs}
           >
             <Search size={18} className="text-white/50" />
           </button>
 
-          <label className="hidden md:flex items-center gap-1.5 px-2 py-1.5 rounded-md border border-white/[0.06] bg-white/[0.02] text-white/35 hover:text-white/65 hover:bg-white/[0.04] transition-all">
-            <Globe2 size={13} />
-            <span className="sr-only">Language</span>
+          <label
+            className="relative flex h-8 min-w-8 items-center justify-center gap-1.5 rounded-md border border-white/[0.06] bg-white/[0.02] px-2 text-white/35 transition-all hover:bg-white/[0.04] hover:text-white/65"
+            title={activeLanguage.nativeLabel}
+          >
+            <Globe2 size={14} aria-hidden="true" />
+            <span className="hidden lg:inline text-xs">{activeLanguage.nativeLabel}</span>
             <select
               value={normalizedLanguage}
               onChange={(event) => {
                 const nextPath = buildLanguagePath(router.asPath, event.target.value);
                 router.push(nextPath);
               }}
-              className="bg-transparent text-xs outline-none cursor-pointer"
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
               aria-label="Select documentation language"
             >
               {SUPPORTED_LANGUAGES.map((language) => (

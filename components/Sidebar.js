@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Tree-structured navigation for docs categories & articles
  * Modification Reason:
+ *   v1.3.0 - [DOCS-UX 2026-08-04 by Codex] Replace platform-dependent emoji
+ *     navigation with consistent Lucide icons and localize drawer chrome.
  *   v1.2.0 - Sidebar article links respect currentLanguage for multilingual SEO routes.
  *   v1.0.1 - Fixed expanded state not updating on route change (BUG:
  *     initial state was stale after navigation). Now uses useEffect to react
@@ -33,15 +35,49 @@
  * - Supports up to 3 nesting levels (visual indent)
  * - expanded state is synced with currentSlug via useEffect
  *
- * Last Modified: v1.2.0 - Multilingual sidebar links
+ * Last Modified: v1.3.0 - Localized, product-grade navigation
  * ============================================
  */
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { ChevronRight, FileText, X } from 'lucide-react';
-import { articleHref, DEFAULT_LANGUAGE } from '../lib/api';
+import {
+  BookOpenText,
+  Braces,
+  BrainCircuit,
+  ChevronRight,
+  CircleHelp,
+  Compass,
+  FileText,
+  Folder,
+  Gauge,
+  KeyRound,
+  ListChecks,
+  Network,
+  Rocket,
+  Server,
+  ShieldCheck,
+  X,
+} from 'lucide-react';
+import { articleHref, DEFAULT_LANGUAGE, getUiCopy } from '../lib/api';
+
+const CATEGORY_ICONS = {
+  book: BookOpenText,
+  folder: Folder,
+  code: Braces,
+  rocket: Rocket,
+  shield: ShieldCheck,
+  brain: BrainCircuit,
+  globe: Network,
+  key: KeyRound,
+  api: Braces,
+  guide: Compass,
+  faq: CircleHelp,
+  changelog: ListChecks,
+  server: Server,
+  dashboard: Gauge,
+};
 
 // ============================================
 // Helper: Check if a category subtree contains a given slug
@@ -66,6 +102,7 @@ export default function Sidebar({
 }) {
   const router = useRouter();
   const currentSlug = router.query.slug;
+  const copy = getUiCopy(currentLanguage);
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
@@ -95,17 +132,17 @@ export default function Sidebar({
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
         role="navigation"
-        aria-label="Documentation navigation"
+        aria-label={copy.navigation}
       >
         {/* Mobile close button */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.05] lg:hidden">
           <span className="text-[10px] font-medium text-white/30 uppercase tracking-widest">
-            Navigation
+            {copy.navigation}
           </span>
           <button
             onClick={onClose}
             className="p-1 rounded hover:bg-white/5 transition-colors"
-            aria-label="Close navigation"
+            aria-label={copy.close}
           >
             <X size={16} className="text-white/30" />
           </button>
@@ -115,7 +152,7 @@ export default function Sidebar({
         <nav className="sidebar-scroll overflow-y-auto h-full py-4 px-3">
           {categoryTree.length === 0 ? (
             <div className="px-3 py-12 text-center">
-              <div className="text-white/15 text-sm">No categories yet</div>
+              <div className="text-white/20 text-sm leading-relaxed">{copy.noCategories}</div>
             </div>
           ) : (
             <div className="space-y-0.5">
@@ -139,7 +176,7 @@ export default function Sidebar({
               rel="noopener noreferrer"
               className="text-[10px] text-white/15 hover:text-white/35 transition-colors"
             >
-              &copy; {new Date().getFullYear()} AeroNyx Network
+              &copy; {new Date().getFullYear()} AeroNyx
             </a>
           </div>
         </nav>
@@ -168,14 +205,7 @@ function CategoryGroup({ category, currentSlug, currentLanguage = DEFAULT_LANGUA
     if (shouldExpand) setExpanded(true);
   }, [currentSlug, category, depth]);
 
-  // Icon mapping
-  const iconMap = {
-    book: '📖', folder: '📁', code: '💻', rocket: '🚀',
-    shield: '🛡️', brain: '🧠', globe: '🌐', key: '🔑',
-    api: '⚡', guide: '📘', faq: '❓', changelog: '📋',
-    server: '🖥️', dashboard: '📊',
-  };
-  const displayIcon = iconMap[category.icon] || '📄';
+  const CategoryIcon = CATEGORY_ICONS[category.icon] || FileText;
 
   return (
     <div>
@@ -183,7 +213,7 @@ function CategoryGroup({ category, currentSlug, currentLanguage = DEFAULT_LANGUA
       <button
         onClick={() => hasContent && setExpanded(!expanded)}
         className={`
-          w-full flex items-center gap-2 px-2.5 py-[7px] rounded-lg text-left
+          w-full flex items-center gap-2 px-2.5 py-[7px] rounded-md text-left
           hover:bg-white/[0.03] transition-colors group
           ${depth > 0 ? 'ml-2.5' : ''}
         `}
@@ -198,7 +228,11 @@ function CategoryGroup({ category, currentSlug, currentLanguage = DEFAULT_LANGUA
           />
         )}
         {!hasContent && <div className="w-3 flex-shrink-0" />}
-        <span className="text-[13px] flex-shrink-0">{displayIcon}</span>
+        <CategoryIcon
+          size={14}
+          className="flex-shrink-0 text-white/20 group-hover:text-white/40 transition-colors"
+          aria-hidden="true"
+        />
         <span className="text-[13px] font-medium text-white/50 group-hover:text-white/75 truncate transition-colors">
           {category.name}
         </span>

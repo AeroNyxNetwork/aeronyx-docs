@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Cmd+K search overlay for quick article lookup
  * Modification Reason:
+ *   v1.3.0 - [DOCS-UX 2026-08-04 by Codex] Add focus containment,
+ *     stale-request protection, and a compact mobile-safe dialog layout.
  *   v1.2.0 - Search respects currentLanguage and returns localized article links.
  *   v1.0.1 - Added loading skeleton, improved empty state visuals,
  *     added result count badge, smoother transitions.
@@ -26,7 +28,7 @@
  * - searchArticles() always returns an array (fixed in v1.0.1)
  * - Scroll selected item into view for long result lists
  *
- * Last Modified: v1.2.0 - Multilingual search routing
+ * Last Modified: v1.3.0 - Accessible and race-safe search dialog
  * ============================================
  */
 
@@ -42,17 +44,25 @@ export default function SearchModal({ isOpen, onClose, currentLanguage = DEFAULT
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef(null);
   const listRef = useRef(null);
+  const modalRef = useRef(null);
+  const previousFocusRef = useRef(null);
   const router = useRouter();
   const copy = getUiCopy(currentLanguage);
 
   // Focus input when modal opens
   useEffect(() => {
     if (isOpen) {
+      previousFocusRef.current = document.activeElement;
       setQuery('');
       setResults([]);
       setSelectedIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 100);
+      const timer = setTimeout(() => inputRef.current?.focus(), 100);
+      return () => {
+        clearTimeout(timer);
+        previousFocusRef.current?.focus?.();
+      };
     }
+    return undefined;
   }, [isOpen]);
 
   // ESC to close, prevent body scroll
@@ -60,15 +70,37 @@ export default function SearchModal({ isOpen, onClose, currentLanguage = DEFAULT
     if (!isOpen) return;
 
     const handler = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+
+      if (e.key !== 'Tab') return;
+      const focusable = Array.from(
+        modalRef.current?.querySelectorAll(
+          'button:not([disabled]), input:not([disabled]), a[href], select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ) || []
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && (document.activeElement === first || !modalRef.current?.contains(document.activeElement))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
 
     // Lock body scroll
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', handler);
 
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handler);
     };
   }, [isOpen, onClose]);
@@ -82,14 +114,19 @@ export default function SearchModal({ isOpen, onClose, currentLanguage = DEFAULT
     }
 
     setLoading(true);
+    let cancelled = false;
     const timer = setTimeout(async () => {
       const data = await searchArticles(query, { lang: currentLanguage });
+      if (cancelled) return;
       setResults(data);
       setSelectedIndex(0);
       setLoading(false);
     }, 300);
 
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [query, currentLanguage]);
 
   // Scroll selected item into view
@@ -130,7 +167,7 @@ export default function SearchModal({ isOpen, onClose, currentLanguage = DEFAULT
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[12vh] sm:pt-[15vh]">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-[max(4rem,env(safe-area-inset-top))] sm:pt-[15vh]">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in"
@@ -138,7 +175,14 @@ export default function SearchModal({ isOpen, onClose, currentLanguage = DEFAULT
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-xl mx-4 bg-surface-100 border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/40 overflow-hidden animate-slide-up">
+      <div
+        ref={modalRef}
+        className="relative w-full max-w-xl bg-surface-100 border border-white/[0.08] rounded-lg shadow-2xl shadow-black/40 overflow-hidden animate-slide-up"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="docs-search-title"
+      >
+        <h2 id="docs-search-title" className="sr-only">{copy.searchDocs}</h2>
         {/* Search input */}
         <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/[0.06]">
           {loading ? (
@@ -172,7 +216,7 @@ export default function SearchModal({ isOpen, onClose, currentLanguage = DEFAULT
         </div>
 
         {/* Results */}
-        <div className="max-h-[360px] overflow-y-auto overscroll-contain">
+        <div className="max-h-[min(56vh,360px)] overflow-y-auto overscroll-contain">
           {/* Loading skeleton */}
           {loading && query.length >= 2 && (
             <div className="py-3 px-2 space-y-1">
@@ -191,7 +235,7 @@ export default function SearchModal({ isOpen, onClose, currentLanguage = DEFAULT
           {/* No results */}
           {!loading && query.length >= 2 && results.length === 0 && (
             <div className="px-4 py-10 text-center">
-              <div className="text-2xl mb-3 opacity-30">🔍</div>
+              <Search size={22} className="mx-auto mb-3 text-white/15" aria-hidden="true" />
               <div className="text-sm text-white/30 mb-1">{copy.noResultsFound}</div>
               <div className="text-xs text-white/15">{copy.tryDifferentKeywords}</div>
             </div>
@@ -267,7 +311,7 @@ export default function SearchModal({ isOpen, onClose, currentLanguage = DEFAULT
         </div>
 
         {/* Footer hint */}
-        <div className="flex items-center justify-between px-4 py-2 border-t border-white/[0.04] text-[10px] text-white/15">
+        <div className="hidden sm:flex items-center justify-between px-4 py-2 border-t border-white/[0.04] text-[10px] text-white/15">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
               <kbd className="px-1 py-px rounded bg-white/[0.04] text-[9px]">↑</kbd>

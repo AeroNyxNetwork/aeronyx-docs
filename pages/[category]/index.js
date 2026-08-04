@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Category page showing article list for a given category
  * Modification Reason:
+ *   v1.1.3 - [DOCS-UX 2026-08-04 by Codex] Align category typography,
+ *     spacing, empty state, and card geometry with the docs reading system.
  *   v1.1.2 - Add self-referencing canonical URLs for category pages.
  *   v1.1.1 - Localize article metadata dates and view counters on category
  *     pages so non-English routes do not show English-only chrome.
@@ -27,14 +29,14 @@
  * - getServerSideProps ensures fresh data on each request
  * - Articles are pre-filtered to is_published=true by the API
  *
- * Last Modified: v1.1.2 - Category canonical metadata
+ * Last Modified: v1.1.3 - Unified category reading experience
  * ============================================
  */
 
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
-import { ArrowRight, Clock, Eye } from 'lucide-react';
+import { ArrowRight, Clock, Eye, FileText } from 'lucide-react';
 import Layout from '../../components/Layout';
 import DocsHome, { getDocsHomeProps } from '../index';
 import {
@@ -103,7 +105,7 @@ export default function CategoryPage({
       meta={{ canonical: canonicalUrl }}
       currentLanguage={currentLanguage}
     >
-      <div className="max-w-4xl mx-auto px-6 py-10 lg:py-12">
+      <div className="max-w-4xl mx-auto px-5 sm:px-7 py-9 sm:py-10 lg:py-12">
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-[11px] text-white/20 mb-6">
@@ -122,7 +124,7 @@ export default function CategoryPage({
           className="mb-8"
         >
           <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-2xl sm:text-3xl font-light text-white/90">{title}</h1>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-white/90">{title}</h1>
             {count > 0 && (
               <span className="px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.06] text-[10px] text-white/25 tabular-nums">
                 {count}
@@ -148,7 +150,7 @@ export default function CategoryPage({
               >
                 <Link
                   href={articleHref(article, currentLanguage, categorySlug)}
-                  className="group flex items-center justify-between p-4 rounded-xl
+                  className="group flex items-center justify-between p-4 rounded-lg
                     border border-white/[0.04] bg-white/[0.01]
                     hover:bg-white/[0.03] hover:border-white/[0.08]
                     transition-all duration-200"
@@ -189,8 +191,8 @@ export default function CategoryPage({
           </div>
         ) : (
           <div className="text-center py-20">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-center">
-              <span className="text-xl opacity-40">📭</span>
+            <div className="w-14 h-14 mx-auto mb-4 rounded-lg bg-white/[0.02] border border-white/[0.05] flex items-center justify-center">
+              <FileText size={21} className="text-white/20" aria-hidden="true" />
             </div>
             <p className="text-sm text-white/25">{copy.noArticlesInCategory}</p>
           </div>

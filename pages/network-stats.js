@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Provide a GEO-friendly public data page for AeroNyx network metrics.
  * Modification Reason:
+ *   v1.2.4 - [DOCS-UX 2026-08-04 by Codex] Align the stats page with the
+ *     restrained docs geometry and remove the nested-card protocol section.
  *   v1.2.3 - Replaced public-facing Rust implementation wording with
  *     decentralized privacy node terminology so the page reads as protocol
  *     infrastructure instead of an engineering dashboard.
@@ -40,7 +42,7 @@
  * - Keep this page factual and citation-friendly.
  * - Do not add client IPs, destinations, DNS contents, domains, URLs, or payload data.
  *
- * Last Modified: v1.2.3 - Use decentralized privacy node wording
+ * Last Modified: v1.2.4 - Unified public-stats presentation
  * Previous: v1.2.2 - Correct privacy network stats API path
  * Previous: v1.2.1 - Network stats canonical metadata
  * Previous: v1.2.0 - Add protocol synchronization metrics
@@ -69,7 +71,7 @@ function formatBytes(bytes) {
 
 function Metric({ icon: Icon, label, value, detail }) {
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-5">
+    <div className="rounded-lg border border-white/[0.06] bg-white/[0.015] p-5">
       <div className="flex items-center gap-2 mb-3">
         <Icon size={15} className="text-primary/70" />
         <div className="text-[11px] uppercase tracking-wider text-white/25">
@@ -112,15 +114,15 @@ export default function NetworkStatsPage({ siteConfig, categoryTree, stats }) {
         canonical: `${docsBaseUrl}/network-stats`,
       }}
     >
-      <div className="max-w-5xl mx-auto px-6 py-10 lg:py-14">
+      <div className="max-w-5xl mx-auto px-5 sm:px-7 py-10 lg:py-14">
         <div className="mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/[0.08] border border-primary/[0.12] mb-5">
+          <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-primary/[0.08] border border-primary/[0.12] mb-5">
             <ShieldCheck size={13} className="text-primary" />
             <span className="text-[11px] font-medium text-primary-300 tracking-wide">
               Public Aggregate Data
             </span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-semibold text-white/95 tracking-tight mb-4">
+          <h1 className="text-3xl sm:text-4xl font-semibold text-white/95 mb-4">
             AeroNyx Network Stats
           </h1>
           <p className="text-[15px] text-white/45 max-w-2xl leading-relaxed">
@@ -156,9 +158,9 @@ export default function NetworkStatsPage({ siteConfig, categoryTree, stats }) {
           />
         </div>
 
-        <section className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-5 mb-8">
+        <section className="border-t border-white/[0.06] pt-8 mb-10">
           <div className="mb-5">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/[0.08] border border-primary/[0.12] mb-4">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-primary/[0.08] border border-primary/[0.12] mb-4">
               <GitBranch size={13} className="text-primary" />
               <span className="text-[11px] font-medium text-primary-300 tracking-wide">
                 Protocol Synchronization
@@ -204,7 +206,7 @@ export default function NetworkStatsPage({ siteConfig, categoryTree, stats }) {
         </section>
 
         <div className="grid lg:grid-cols-2 gap-3">
-          <section className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-5">
+          <section className="rounded-lg border border-white/[0.06] bg-white/[0.015] p-5">
             <h2 className="text-sm font-medium text-white/75 mb-3">
               What These Metrics Mean
             </h2>
@@ -227,7 +229,7 @@ export default function NetworkStatsPage({ siteConfig, categoryTree, stats }) {
             </div>
           </section>
 
-          <section className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-5">
+          <section className="rounded-lg border border-white/[0.06] bg-white/[0.015] p-5">
             <h2 className="text-sm font-medium text-white/75 mb-3">
               Privacy Boundary
             </h2>

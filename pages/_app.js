@@ -10,16 +10,19 @@
  *   existed. The head now advertises SVG, ICO, PNG, Apple touch, and web
  *   manifest assets so browser tabs, mobile bookmarks, and AI/browser preview
  *   surfaces all show the AeroNyx brand mark.
+ * Modification Reason: v1.0.3 - [DOCS-UX 2026-08-04 by Codex] Remove the
+ *   third-party font request; the docs now use a fast native system stack.
  *
- * Dependencies: globals.css, Inter + JetBrains Mono fonts
+ * Dependencies: globals.css
  *
  * ⚠️ Important Note for Next Developer:
- * - Fonts are loaded from Google Fonts CDN
- * - For self-hosted fonts, use next/font instead
+ * - Typography uses the native platform font stack from globals.css
+ * - Do not add remote font calls without a privacy and performance review
  * - All global CSS must be imported here
  *
  * Last Modified: v1.0.1 - Font preload + meta fixes
  * Last Modified: v1.0.2 - Complete docs icon metadata
+ * Last Modified: v1.0.3 - Native system fonts
  * ============================================
  */
 
@@ -33,14 +36,6 @@ export default function App({ Component, pageProps }) {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#09090b" />
-
-        {/* Font preconnect + load */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-          rel="stylesheet"
-        />
 
         {/* Favicon / install metadata */}
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />

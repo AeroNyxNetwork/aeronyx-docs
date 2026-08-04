@@ -4,6 +4,9 @@
  * ============================================
  * Creation Reason: Documentation homepage / landing page
  * Modification Reason:
+ *   v1.2.0 - [DOCS-UX 2026-08-04 by Codex] Replace the blog-style gradient
+ *     hero, emoji categories, and popularity metadata with a quiet official
+ *     reading path and direct category navigation.
  *   v1.1.1 - Add canonical homepage metadata and localize article card dates
  *     and view counters for multilingual home routes.
  *   v1.1.0 - Read homepage hero, SEO, and empty-state copy from Django
@@ -14,9 +17,9 @@
  *
  * Main Logical Flow:
  *   1. getServerSideProps fetches siteConfig + categoryTree + recent articles
- *   2. Renders hero section with brand gradient + intro text
- *   3. Shows recent articles as feature cards
- *   4. Shows category grid for browsing
+ *   2. Renders an unframed protocol introduction and two canonical entry links
+ *   3. Shows the ordered recommended reading path
+ *   4. Shows compact category navigation for the complete documentation set
  *
  * Dependencies:
  *   - lib/api.js (fetchSiteConfig, fetchCategoryTree, fetchArticleList)
@@ -29,13 +32,23 @@
  * - Category cards link to first article or category index
  * - getServerSideProps handles both paginated & raw API responses
  *
- * Last Modified: v1.1.1 - Homepage SEO and localized article metadata
+ * Last Modified: v1.2.0 - Official reading-path homepage
  * ============================================
  */
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { BookOpen, ArrowRight, Clock, Eye, Search } from 'lucide-react';
+import {
+  ArrowRight,
+  CircleHelp,
+  Compass,
+  FileText,
+  Gauge,
+  Network,
+  Search,
+  Server,
+  ShieldCheck,
+} from 'lucide-react';
 import Layout from '../components/Layout';
 import {
   articleHref,
@@ -44,7 +57,6 @@ import {
   fetchCategoryTree,
   fetchArticleList,
   getUiCopy,
-  languageLocale,
   languagePathPrefix,
 } from '../lib/api';
 
@@ -57,6 +69,12 @@ export default function DocsHome({
   const copy = getUiCopy(currentLanguage);
   const docsBaseUrl = siteConfig?.docs_base_url || 'https://docs.aeronyx.network';
   const canonicalUrl = `${docsBaseUrl}${languagePathPrefix(currentLanguage) || '/'}`;
+  const primaryArticle = recentArticles?.find(
+    (article) => (article.translation_key || article.slug) === 'what-is-aeronyx'
+  );
+  const memChainArticle = recentArticles?.find(
+    (article) => (article.translation_key || article.slug) === 'memory-chain-and-encrypted-storage'
+  );
 
   return (
     <Layout
@@ -70,52 +88,53 @@ export default function DocsHome({
       }}
       currentLanguage={currentLanguage}
     >
-      <div className="max-w-4xl mx-auto px-6 py-10 lg:py-14">
+      <div className="max-w-5xl mx-auto px-5 sm:px-7 py-10 sm:py-14 lg:py-16">
 
         {/* ===== Hero Section ===== */}
-        <motion.div
+        <motion.section
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="relative mb-16 p-8 sm:p-10 rounded-2xl overflow-hidden"
+          className="mb-16 sm:mb-20 max-w-3xl"
         >
-          {/* Gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.06] via-transparent to-primary/[0.03] rounded-2xl" />
-          <div className="absolute inset-0 border border-white/[0.04] rounded-2xl" />
-
-          {/* Subtle grid pattern */}
-          <div
-            className="absolute inset-0 opacity-[0.03]"
-            style={{
-              backgroundImage: `
-                linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
-              `,
-              backgroundSize: '32px 32px',
-            }}
-          />
-
-          <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/[0.08] border border-primary/[0.12] mb-6">
-              <BookOpen size={13} className="text-primary" />
-              <span className="text-[11px] font-medium text-primary-300 tracking-wide">
-                {siteConfig?.badge_label || 'Documentation & Blog'}
-              </span>
-            </div>
-
-            <h1 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-light mb-4 text-white/95 leading-[1.15]">
-              {siteConfig?.hero_title || 'AeroNyx'}{' '}
-              <span className="font-semibold bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
-                {siteConfig?.hero_highlight || 'Documentation'}
-              </span>
-            </h1>
-
-            <p className="text-[15px] sm:text-base text-white/40 max-w-xl leading-relaxed">
-              {siteConfig?.hero_description ||
-                'Everything you need to understand, deploy, and build with AeroNyx Network. From getting started guides to deep technical references.'}
-            </p>
+          <div className="inline-flex items-center gap-2 mb-6 text-[11px] font-medium text-white/45 tracking-wider uppercase">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
+            {siteConfig?.badge_label || 'Official Documentation'}
           </div>
-        </motion.div>
+
+          <h1 className="text-[2.15rem] sm:text-[3rem] lg:text-[3.5rem] font-semibold mb-5 text-white/95 leading-[1.08]">
+            {siteConfig?.hero_title || 'AeroNyx'}{' '}
+            <span className="text-white/45">
+              {siteConfig?.hero_highlight || 'Protocol Documentation'}
+            </span>
+          </h1>
+
+          <p className="text-[15px] sm:text-[17px] text-white/45 max-w-2xl leading-[1.75]">
+            {siteConfig?.hero_description ||
+              'Understand, deploy, and build with the blind, open encrypted coordination protocol for humans, apps, and autonomous agents.'}
+          </p>
+
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 mt-8">
+            {primaryArticle && (
+              <Link
+                href={articleHref(primaryArticle, currentLanguage)}
+                className="group inline-flex items-center gap-2 text-sm font-medium text-white/85 hover:text-white transition-colors"
+              >
+                {primaryArticle.title}
+                <ArrowRight size={14} className="text-primary group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            )}
+            {memChainArticle && (
+              <Link
+                href={articleHref(memChainArticle, currentLanguage)}
+                className="group inline-flex items-center gap-2 text-sm text-white/40 hover:text-white/70 transition-colors"
+              >
+                {memChainArticle.title}
+                <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            )}
+          </div>
+        </motion.section>
 
         {/* ===== Recent Articles ===== */}
         {recentArticles && recentArticles.length > 0 && (
@@ -123,7 +142,7 @@ export default function DocsHome({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="mb-16"
+            className="mb-16 sm:mb-20"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider">
@@ -131,7 +150,7 @@ export default function DocsHome({
               </h2>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-3">
+            <div className="grid sm:grid-cols-2 gap-px overflow-hidden rounded-lg border border-white/[0.07] bg-white/[0.07]">
               {recentArticles.map((article, i) => (
                 <motion.div
                   key={article.id}
@@ -139,7 +158,7 @@ export default function DocsHome({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: 0.15 + i * 0.05 }}
                 >
-                  <ArticleCard article={article} currentLanguage={currentLanguage} />
+                  <ArticleCard article={article} currentLanguage={currentLanguage} index={i} />
                 </motion.div>
               ))}
             </div>
@@ -157,7 +176,7 @@ export default function DocsHome({
               {copy.browseByCategory}
             </h2>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid sm:grid-cols-2 gap-3">
               {categoryTree.map((cat, i) => (
                 <motion.div
                   key={cat.id || cat.slug}
@@ -176,7 +195,7 @@ export default function DocsHome({
         {(!categoryTree || categoryTree.length === 0) &&
          (!recentArticles || recentArticles.length === 0) && (
           <div className="text-center py-24">
-            <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto mb-5 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
               <Search size={24} className="text-white/15" />
             </div>
             <h2 className="text-lg text-white/50 mb-2 font-light">
@@ -196,79 +215,60 @@ export default function DocsHome({
 // Sub-components
 // ============================================
 
-function ArticleCard({ article, currentLanguage }) {
+function ArticleCard({ article, currentLanguage, index }) {
   const href = articleHref(article, currentLanguage);
-  const copy = getUiCopy(currentLanguage);
-  const locale = languageLocale(currentLanguage);
 
   return (
     <Link
       href={href}
-      className="group block p-5 rounded-xl border border-white/[0.05] bg-white/[0.015]
-        hover:bg-white/[0.035] hover:border-white/[0.1]
-        transition-all duration-200"
+      className="group block min-h-[154px] p-5 sm:p-6 bg-[#0b0b0e]
+        hover:bg-[#101014] transition-colors duration-200"
     >
-      {article.is_pinned && (
-        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/[0.08] border border-primary/[0.1] text-[10px] text-primary-300 font-medium mb-2.5 tracking-wide">
-          {copy.featured}
-        </div>
-      )}
-      <h3 className="text-[14px] font-medium text-white/80 group-hover:text-white mb-2 transition-colors leading-snug">
-        {article.title}
-      </h3>
-      {article.summary && (
-        <p className="text-[13px] text-white/30 line-clamp-2 mb-3 leading-relaxed">
-          {article.summary}
-        </p>
-      )}
-      <div className="flex items-center gap-3 text-[11px] text-white/20">
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-[11px] text-white/20 font-mono tabular-nums">
+          {String(index + 1).padStart(2, '0')}
+        </span>
         {article.category_name && (
-          <span className="text-primary/40">{article.category_name}</span>
-        )}
-        {article.published_at && (
-          <span className="flex items-center gap-1">
-            <Clock size={10} />
-            {new Date(article.published_at).toLocaleDateString(locale, {
-              month: 'short', day: 'numeric', year: 'numeric',
-            })}
-          </span>
-        )}
-        {article.view_count > 0 && (
-          <span className="flex items-center gap-1">
-            <Eye size={10} />
-            {copy.views(article.view_count)}
+          <span className="text-[10px] text-primary/60 uppercase tracking-wider">
+            {article.category_name}
           </span>
         )}
       </div>
+      <h3 className="text-[15px] font-medium text-white/80 group-hover:text-white mb-2 transition-colors leading-snug">
+        {article.title}
+      </h3>
+      {article.summary && (
+        <p className="text-[13px] text-white/35 line-clamp-2 leading-relaxed">
+          {article.summary}
+        </p>
+      )}
     </Link>
   );
 }
 
 function CategoryCard({ category, currentLanguage }) {
-  const firstArticle = category.articles?.[0];
   const copy = getUiCopy(currentLanguage);
-  const href = firstArticle
-    ? articleHref(firstArticle, currentLanguage, category.slug)
-    : `${languagePathPrefix(currentLanguage)}/${category.slug}`;
-
+  const href = `${languagePathPrefix(currentLanguage)}/${category.slug}`;
   const iconMap = {
-    book: '📖', folder: '📁', code: '💻', rocket: '🚀',
-    shield: '🛡️', brain: '🧠', globe: '🌐', key: '🔑',
-    api: '⚡', guide: '📘', faq: '❓', changelog: '📋',
-    server: '🖥️', dashboard: '📊',
+    intro: Compass,
+    'node-operators': Server,
+    nodeboard: Gauge,
+    network: Network,
+    faq: CircleHelp,
+    articles: ShieldCheck,
   };
-  const icon = iconMap[category.icon] || '📄';
+  const CategoryIcon = iconMap[category.slug] || FileText;
   const count = category.article_count || category.articles?.length || 0;
 
   return (
     <Link
       href={href}
-      className="group block p-5 rounded-xl border border-white/[0.05] bg-white/[0.015]
-        hover:bg-primary/[0.03] hover:border-primary/[0.12]
+      className="group block p-5 rounded-lg border border-white/[0.06] bg-white/[0.01]
+        hover:bg-white/[0.025] hover:border-white/[0.12]
         transition-all duration-200"
     >
       <div className="flex items-center gap-3 mb-2.5">
-        <span className="text-lg">{icon}</span>
+        <CategoryIcon size={17} className="text-white/30 group-hover:text-primary/70 transition-colors" />
         <h3 className="text-[14px] font-medium text-white/75 group-hover:text-white transition-colors">
           {category.name}
         </h3>
@@ -284,7 +284,7 @@ function CategoryCard({ category, currentLanguage }) {
         </span>
         <ArrowRight
           size={13}
-          className="text-white/[0.06] group-hover:text-primary/50 group-hover:translate-x-0.5 transition-all"
+          className="text-white/10 group-hover:text-primary/60 group-hover:translate-x-0.5 transition-all"
         />
       </div>
     </Link>

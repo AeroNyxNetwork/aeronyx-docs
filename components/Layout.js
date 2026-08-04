@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Wraps all pages with Header, Sidebar, and SearchModal
  * Modification Reason:
+ *   v1.3.0 - [DOCS-UX 2026-08-04 by Codex] Resolve the site description once
+ *     and use the correct Open Graph type for pages versus articles.
  *   v1.2.2 - Support canonical URLs, robots hints, and og:url so SEO/GEO
  *     metadata can be supplied by page-level routes without duplicating tags.
  *   v1.2.1 - Avoid duplicating the docs site name when article meta_title
@@ -37,7 +39,7 @@
  * - Each page should pass categoryTree and siteConfig as props to Layout
  * - Layout does NOT fetch data itself
  *
- * Last Modified: v1.2.2 - Canonical and robots metadata support
+ * Last Modified: v1.3.0 - Consistent metadata and page semantics
  * ============================================
  */
 
@@ -52,7 +54,7 @@ export default function Layout({
   categoryTree = [],
   siteConfig = null,
   title = 'AeroNyx Docs',
-  description = 'AeroNyx Network — Documentation, guides, and technical references.',
+  description = null,
   meta = {},
   currentLanguage = 'en',
 }) {
@@ -65,7 +67,10 @@ export default function Layout({
   const handleCloseSearch = useCallback(() => setSearchOpen(false), []);
 
   const siteName = siteConfig?.site_name || 'AeroNyx Docs';
-  const defaultDescription = siteConfig?.seo_description || description;
+  const resolvedDescription =
+    description ||
+    siteConfig?.seo_description ||
+    'Official AeroNyx protocol documentation.';
   const normalizedTitle = (title || siteName).trim();
   const fullTitle =
     normalizedTitle === siteName ||
@@ -79,7 +84,7 @@ export default function Layout({
     <>
       <Head>
         <title>{fullTitle}</title>
-        <meta name="description" content={description || defaultDescription} />
+        <meta name="description" content={resolvedDescription} />
         {(meta.keywords || siteConfig?.seo_keywords) && (
           <meta name="keywords" content={meta.keywords || siteConfig.seo_keywords} />
         )}
@@ -88,8 +93,8 @@ export default function Layout({
 
         {/* Open Graph */}
         <meta property="og:title" content={fullTitle} />
-        <meta property="og:description" content={description || defaultDescription} />
-        <meta property="og:type" content="article" />
+        <meta property="og:description" content={resolvedDescription} />
+        <meta property="og:type" content={meta.type || 'website'} />
         <meta property="og:site_name" content={siteName} />
         {meta.canonical && <meta property="og:url" content={meta.canonical} />}
         {meta.image && <meta property="og:image" content={meta.image} />}
@@ -97,7 +102,7 @@ export default function Layout({
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={fullTitle} />
-        <meta name="twitter:description" content={description || defaultDescription} />
+        <meta name="twitter:description" content={resolvedDescription} />
         {meta.image && <meta name="twitter:image" content={meta.image} />}
       </Head>
 

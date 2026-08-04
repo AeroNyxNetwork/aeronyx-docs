@@ -4,6 +4,10 @@
  * ============================================
  * Creation Reason: Article detail page with full Markdown rendering
  * Modification Reason:
+ *   v1.1.5 - [DOCS-UX 2026-08-04 by Codex] Suppress the summary callout only
+ *     when it exactly duplicates the first Markdown paragraph.
+ *   v1.1.4 - [DOCS-UX 2026-08-04 by Codex] Fix conditional hook ordering,
+ *     estimate CJK reading time correctly, and refine mobile article layout.
  *   v1.1.3 - Add self-referencing canonical URLs and JSON-LD structured data
  *     for article and breadcrumb discovery.
  *   v1.1.2 - Localize article metadata dates so translated pages do not keep
@@ -36,7 +40,7 @@
  * - BUG FIX: prev/next links now use article.category_slug (from API)
  *   instead of the URL categorySlug param, since articles might change category
  *
- * Last Modified: v1.1.3 - Article canonical and structured data
+ * Last Modified: v1.1.5 - Duplicate-summary guard
  * ============================================
  */
 
@@ -44,7 +48,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Clock, Eye, User, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
+import { Clock, Eye, User, ChevronLeft, ChevronRight, BookOpen, FileText } from 'lucide-react';
 import Layout from '../../components/Layout';
 import CategoryPage, { getCategoryPageProps } from './index';
 import MarkdownRenderer, { extractTOC } from '../../components/MarkdownRenderer';
@@ -67,8 +71,35 @@ import {
 
 function estimateReadTime(content) {
   if (!content) return 0;
-  const words = content.trim().split(/\s+/).length;
-  return Math.max(1, Math.ceil(words / 200));
+  const readableText = content
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/[#*_`>\[\]()~-]/g, ' ');
+  const cjkCharacters = readableText.match(
+    /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu
+  )?.length || 0;
+  const nonCjkWords = readableText
+    .replace(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu, ' ')
+    .match(/[\p{L}\p{N}]+/gu)?.length || 0;
+
+  return Math.max(1, Math.ceil((cjkCharacters / 450) + (nonCjkWords / 220)));
+}
+
+function normalizeComparableText(value) {
+  return (value || '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/[*_`>#]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function summaryRepeatsFirstParagraph(content, summary) {
+  if (!content || !summary) return false;
+  const withoutDocumentTitle = content
+    .replace(/^\uFEFF/, '')
+    .replace(/^\s*#\s+.+(?:\r?\n|$)/, '')
+    .trimStart();
+  const firstParagraph = withoutDocumentTitle.split(/\r?\n\s*\r?\n/, 1)[0];
+  return normalizeComparableText(firstParagraph) === normalizeComparableText(summary);
 }
 
 // ============================================
@@ -100,21 +131,10 @@ export default function ArticlePage({
   const readTime = article?.content ? estimateReadTime(article.content) : 0;
   const locale = languageLocale(currentLanguage);
 
-  if (pageKind === 'category') {
-    return (
-      <CategoryPage
-        siteConfig={siteConfig}
-        categoryTree={categoryTree}
-        categorySlug={categorySlug}
-        articles={articles}
-        categoryInfo={categoryInfo}
-        currentLanguage={currentLanguage}
-      />
-    );
-  }
-
   // Reading progress bar
   useEffect(() => {
+    if (pageKind !== 'article') return undefined;
+
     const handleScroll = () => {
       const scrollTop = window.scrollY;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
@@ -125,7 +145,7 @@ export default function ArticlePage({
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [pageKind]);
 
   // IntersectionObserver for active heading tracking
   useEffect(() => {
@@ -156,6 +176,21 @@ export default function ArticlePage({
     };
   }, [toc]);
 
+  // Keep all hooks above route-mode branching. Next.js can reuse this page
+  // component when navigating between language category and article routes.
+  if (pageKind === 'category') {
+    return (
+      <CategoryPage
+        siteConfig={siteConfig}
+        categoryTree={categoryTree}
+        categorySlug={categorySlug}
+        articles={articles}
+        categoryInfo={categoryInfo}
+        currentLanguage={currentLanguage}
+      />
+    );
+  }
+
   // 404 state
   if (router.isFallback || !article) {
     return (
@@ -166,8 +201,8 @@ export default function ArticlePage({
       >
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-center">
-              <span className="text-2xl opacity-30">📄</span>
+            <div className="w-16 h-16 mx-auto mb-5 rounded-lg bg-white/[0.02] border border-white/[0.05] flex items-center justify-center">
+              <FileText size={24} className="text-white/20" aria-hidden="true" />
             </div>
             <h1 className="text-lg text-white/50 mb-2 font-light">{copy.articleNotFound}</h1>
             <Link
@@ -184,6 +219,9 @@ export default function ArticlePage({
 
   // BUG FIX (v1.0.1): Use article's own category_slug for prev/next links
   const articleCatSlug = article.category_slug || categorySlug;
+  const showSummary = Boolean(
+    article.summary && !summaryRepeatsFirstParagraph(article.content, article.summary)
+  );
   const docsBaseUrl = siteConfig?.docs_base_url || 'https://docs.aeronyx.network';
   const canonicalSlug = article.canonical_slug || article.translation_key || article.slug;
   const canonicalUrl = `${docsBaseUrl}${languagePathPrefix(currentLanguage)}/${articleCatSlug}/${canonicalSlug}`;
@@ -243,6 +281,7 @@ export default function ArticlePage({
         keywords: article.meta_keywords,
         image: article.cover_image,
         canonical: canonicalUrl,
+        type: 'article',
       }}
     >
       <Head>
@@ -284,7 +323,7 @@ export default function ArticlePage({
       <div className="flex">
         {/* ===== Article content ===== */}
         <article
-          className="flex-1 min-w-0 max-w-3xl mx-auto px-6 py-10 lg:py-12"
+          className="flex-1 min-w-0 max-w-3xl mx-auto px-5 sm:px-7 py-9 sm:py-10 lg:py-12"
         >
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-[11px] text-white/20 mb-8" aria-label="Breadcrumb">
@@ -314,13 +353,13 @@ export default function ArticlePage({
             <img
               src={article.cover_image}
               alt={article.title}
-              className="w-full rounded-xl border border-white/[0.06] mb-8 max-h-72 object-cover"
+              className="w-full rounded-lg border border-white/[0.06] mb-8 max-h-72 object-cover"
               loading="eager"
             />
           )}
 
           {/* Title */}
-          <h1 className="text-[1.75rem] sm:text-[2rem] lg:text-[2.25rem] font-semibold text-white/95 mb-5 leading-[1.2] tracking-tight">
+          <h1 className="text-[1.75rem] sm:text-[2rem] lg:text-[2.25rem] font-semibold text-white/95 mb-5 leading-[1.2]">
             {article.title}
           </h1>
 
@@ -355,9 +394,9 @@ export default function ArticlePage({
           </div>
 
           {/* Summary callout */}
-          {article.summary && (
-            <div className="bg-primary/[0.03] border border-primary/[0.08] rounded-xl px-5 py-4 mb-8">
-              <p className="text-[14px] text-white/50 leading-[1.7] italic">
+          {showSummary && (
+            <div className="border-l-2 border-primary/60 pl-4 mb-8">
+              <p className="text-[14px] text-white/50 leading-[1.75]">
                 {article.summary}
               </p>
             </div>
@@ -372,7 +411,7 @@ export default function ArticlePage({
               {article.prev_article ? (
                 <Link
                   href={articleHref(article.prev_article, currentLanguage, articleCatSlug)}
-                  className="group flex items-center gap-3 p-4 rounded-xl
+                  className="group flex items-center gap-3 p-4 rounded-lg
                     border border-white/[0.04] hover:border-white/[0.1] hover:bg-white/[0.02]
                     transition-all duration-200"
                 >
@@ -396,7 +435,7 @@ export default function ArticlePage({
               {article.next_article ? (
                 <Link
                   href={articleHref(article.next_article, currentLanguage, articleCatSlug)}
-                  className="group flex items-center justify-end gap-3 p-4 rounded-xl
+                  className="group flex items-center justify-end gap-3 p-4 rounded-lg
                     border border-white/[0.04] hover:border-white/[0.1] hover:bg-white/[0.02]
                     transition-all duration-200 text-right"
                 >

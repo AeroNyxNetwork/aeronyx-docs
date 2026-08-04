@@ -3,7 +3,10 @@
  * File: docs-frontend/components/MarkdownRenderer.js
  * ============================================
  * Creation Reason: Render article Markdown content with syntax highlighting
- * Modification Reason: v1.0.1 - Fixed react-markdown v9 `inline` prop
+ * Modification Reason:
+ *   v1.1.0 - [DOCS-UX 2026-08-04 by Codex] Use the same Unicode-aware slug
+ *     algorithm as rehype-slug and remove duplicated document-title H1s.
+ *   v1.0.1 - Fixed react-markdown v9 `inline` prop
  *   removal (BUG: code component received undefined `inline` prop).
  *   Now detects inline vs block code via `node` context.
  *   Added language badge on code blocks. Improved copy button UX.
@@ -27,7 +30,7 @@
  * - className on code block contains language: "language-javascript" etc.
  * - External links automatically get target="_blank"
  *
- * Last Modified: v1.0.1 - inline code fix + language badge + UX improvements
+ * Last Modified: v1.1.0 - Multilingual heading anchors and title normalization
  * ============================================
  */
 
@@ -35,8 +38,16 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeSlug from 'rehype-slug';
+import GithubSlugger from 'github-slugger';
 import { Copy, Check, Link as LinkIcon } from 'lucide-react';
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
+
+function normalizeDocumentMarkdown(markdown) {
+  return (markdown || '')
+    .replace(/^\uFEFF/, '')
+    .replace(/^\s*#\s+.+(?:\r?\n|$)/, '')
+    .trimStart();
+}
 
 // ============================================
 // Table of Contents Extractor
@@ -50,24 +61,23 @@ import { useState, useCallback, useRef } from 'react';
 export function extractTOC(markdown) {
   if (!markdown) return [];
 
+  const normalizedMarkdown = normalizeDocumentMarkdown(markdown);
   const headingRegex = /^(#{1,4})\s+(.+)$/gm;
+  const slugger = new GithubSlugger();
   const toc = [];
   let match;
 
-  while ((match = headingRegex.exec(markdown)) !== null) {
+  while ((match = headingRegex.exec(normalizedMarkdown)) !== null) {
     const level = match[1].length;
     const text = match[2]
       .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove markdown links
       .replace(/[*_`~\[\]]/g, '')               // Remove formatting chars
+      .replace(/\s+#+\s*$/, '')                 // Remove closing heading markers
       .trim();
 
-    // Generate slug matching rehype-slug output
-    const id = text
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
+    // rehype-slug uses github-slugger. Sharing the algorithm preserves CJK,
+    // Cyrillic, Arabic, duplicate-heading, and punctuation behavior exactly.
+    const id = slugger.slug(text);
 
     if (level >= 2 && level <= 4) {
       toc.push({ level, text, id });
@@ -213,7 +223,7 @@ const components = {
           <span className="code-lang-badge">{lang}</span>
         )}
         <pre
-          className="bg-black/50 border border-white/[0.06] rounded-xl p-5 overflow-x-auto text-[13px] leading-[1.7]"
+          className="bg-black/50 border border-white/[0.06] rounded-lg p-5 overflow-x-auto text-[13px] leading-[1.7]"
           {...props}
         >
           {children}
@@ -253,7 +263,7 @@ const components = {
   // Blockquotes
   blockquote: ({ children, ...props }) => (
     <blockquote
-      className="border-l-3 border-primary bg-primary/[0.03] rounded-r-xl px-5 py-3.5 my-5"
+      className="border-l-3 border-primary bg-primary/[0.03] rounded-r-lg px-5 py-3.5 my-5"
       {...props}
     >
       {children}
@@ -279,7 +289,7 @@ const components = {
 
   // Tables
   table: ({ children, ...props }) => (
-    <div className="overflow-x-auto my-5 rounded-xl border border-white/[0.06]">
+    <div className="overflow-x-auto my-5 rounded-lg border border-white/[0.06]">
       <table className="w-full text-sm" {...props}>
         {children}
       </table>
@@ -308,7 +318,7 @@ const components = {
       <img
         src={src}
         alt={alt || ''}
-        className="rounded-xl max-w-full border border-white/[0.06]"
+        className="rounded-lg max-w-full border border-white/[0.06]"
         loading="lazy"
         {...props}
       />
@@ -334,6 +344,8 @@ export default function MarkdownRenderer({ content }) {
     );
   }
 
+  const normalizedContent = normalizeDocumentMarkdown(content);
+
   return (
     <div className="markdown-body">
       <ReactMarkdown
@@ -341,7 +353,7 @@ export default function MarkdownRenderer({ content }) {
         rehypePlugins={[rehypeHighlight, rehypeSlug]}
         components={components}
       >
-        {content}
+        {normalizedContent}
       </ReactMarkdown>
     </div>
   );

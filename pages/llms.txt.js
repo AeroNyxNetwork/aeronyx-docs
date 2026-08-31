@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Expose AeroNyx GEO/LLM summaries at /llms.txt.
  * Modification Reason:
+ *   v1.2.1 - [DOCS-NODE-EVIDENCE 2026-08-31 by Codex] Add a stable,
+ *     machine-readable evidence version header for deployment verification.
  *   v1.2.0 - [DOCS-EDITORIAL 2026-08-04 by Codex] Remove the duplicated,
  *     milestone-era English fallback; compose every language from the backend
  *     or its matching local fallback so partial API failures cannot produce a
@@ -48,7 +50,7 @@
  *   definition, privacy boundary, page order, and public URLs.
  * - Never include user data, node identifiers, routes, or private telemetry.
  *
- * Last Modified: v1.2.0 - Canonical per-language fallback composition
+ * Last Modified: v1.2.1 - Machine-readable evidence deployment version
  * ============================================
  */
 
@@ -60,6 +62,7 @@ import {
 
 const CANONICAL_API_BASE = 'https://api.aeronyx.network/api';
 const FETCH_TIMEOUT_MS = 4500;
+const EVIDENCE_VERSION = 'r8-d1-2026-08-31';
 
 export default function LlmsTxt() {
   return null;
@@ -119,19 +122,26 @@ async function buildMultilingualDocument(apiBase) {
     .join('\n\n---\n\n');
 }
 
+// [DOCS-NODE-EVIDENCE 2026-08-31 by Codex] Keep response identity and cache
+// policy centralized so both the API-backed and emergency fallback paths are
+// externally distinguishable as the same evidence release.
+function setLlmsHeaders(res, cacheControl) {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Cache-Control', cacheControl);
+  res.setHeader('X-AeroNyx-Docs-Evidence-Version', EVIDENCE_VERSION);
+}
+
 export async function getServerSideProps({ res }) {
   const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || CANONICAL_API_BASE;
 
   try {
     const text = await buildMultilingualDocument(apiBase);
     res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=900');
+    setLlmsHeaders(res, 'public, max-age=300, stale-while-revalidate=900');
     res.end(text);
   } catch {
     res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, max-age=60');
+    setLlmsHeaders(res, 'public, max-age=60');
     res.end(getAllLlmsFallbacks());
   }
 

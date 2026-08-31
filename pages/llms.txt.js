@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Expose AeroNyx GEO/LLM summaries at /llms.txt.
  * Modification Reason:
+ *   v1.2.2 - [DOCS-NODE-EVIDENCE 2026-08-31 by Codex] Advance the evidence
+ *     version after scoped integration-test results were refreshed.
  *   v1.2.1 - [DOCS-NODE-EVIDENCE 2026-08-31 by Codex] Add a stable,
  *     machine-readable evidence version header for deployment verification.
  *   v1.2.0 - [DOCS-EDITORIAL 2026-08-04 by Codex] Remove the duplicated,
@@ -50,7 +52,7 @@
  *   definition, privacy boundary, page order, and public URLs.
  * - Never include user data, node identifiers, routes, or private telemetry.
  *
- * Last Modified: v1.2.1 - Machine-readable evidence deployment version
+ * Last Modified: v1.2.2 - Refresh evidence deployment version
  * ============================================
  */
 
@@ -62,7 +64,7 @@ import {
 
 const CANONICAL_API_BASE = 'https://api.aeronyx.network/api';
 const FETCH_TIMEOUT_MS = 4500;
-const EVIDENCE_VERSION = 'r8-d1-2026-08-31';
+const EVIDENCE_VERSION = 'r8-d1-2026-08-31.2';
 
 export default function LlmsTxt() {
   return null;

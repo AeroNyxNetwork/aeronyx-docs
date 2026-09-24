@@ -4,6 +4,10 @@
  * ============================================
  * Creation Reason: Tree-structured navigation for docs categories & articles
  * Modification Reason:
+ *   v1.4.0 - [DOCS-NAV 2026-09-24 by Codex] Replace the fully expanded
+ *     directory with a focused accordion, simplify article rows, remove the
+ *     duplicate site footer link, and resolve localized article routes against
+ *     their third path segment so the current chapter stays visible.
  *   v1.3.0 - [DOCS-UX 2026-08-04 by Codex] Replace platform-dependent emoji
  *     navigation with consistent Lucide icons and localize drawer chrome.
  *   v1.2.0 - Sidebar article links respect currentLanguage for multilingual SEO routes.
@@ -101,8 +105,20 @@ export default function Sidebar({
   currentLanguage = DEFAULT_LANGUAGE,
 }) {
   const router = useRouter();
-  const currentSlug = router.query.slug;
+  const currentSlug = router.query.articleSlug || router.query.slug;
   const copy = getUiCopy(currentLanguage);
+  const activeTopLevelSlug = categoryTree.find((category) =>
+    categoryContainsSlug(category, currentSlug)
+  )?.slug;
+  const [expandedTopLevelSlug, setExpandedTopLevelSlug] = useState(
+    activeTopLevelSlug || null
+  );
+
+  // Keep the reader's current chapter visible after client-side navigation.
+  // On overview pages, the directory stays compact until a chapter is chosen.
+  useEffect(() => {
+    if (activeTopLevelSlug) setExpandedTopLevelSlug(activeTopLevelSlug);
+  }, [activeTopLevelSlug]);
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
@@ -155,7 +171,7 @@ export default function Sidebar({
               <div className="text-white/20 text-sm leading-relaxed">{copy.noCategories}</div>
             </div>
           ) : (
-            <div className="space-y-0.5">
+            <div className="space-y-1">
               {categoryTree.map((category) => (
                 <CategoryGroup
                   key={category.id || category.slug}
@@ -163,22 +179,16 @@ export default function Sidebar({
                   currentSlug={currentSlug}
                   currentLanguage={currentLanguage}
                   depth={0}
+                  expandedOverride={expandedTopLevelSlug === category.slug}
+                  onToggle={() =>
+                    setExpandedTopLevelSlug((current) =>
+                      current === category.slug ? null : category.slug
+                    )
+                  }
                 />
               ))}
             </div>
           )}
-
-          {/* Footer */}
-          <div className="mt-8 pt-4 border-t border-white/[0.04] px-2">
-            <a
-              href="https://aeronyx.network"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[10px] text-white/15 hover:text-white/35 transition-colors"
-            >
-              &copy; {new Date().getFullYear()} AeroNyx
-            </a>
-          </div>
         </nav>
       </aside>
     </>
@@ -189,21 +199,37 @@ export default function Sidebar({
 // CategoryGroup — Recursive category with articles
 // ============================================
 
-function CategoryGroup({ category, currentSlug, currentLanguage = DEFAULT_LANGUAGE, depth = 0 }) {
+function CategoryGroup({
+  category,
+  currentSlug,
+  currentLanguage = DEFAULT_LANGUAGE,
+  depth = 0,
+  expandedOverride,
+  onToggle,
+}) {
   const hasArticles = category.articles && category.articles.length > 0;
   const hasChildren = category.children && category.children.length > 0;
   const hasContent = hasArticles || hasChildren;
 
   // BUG FIX (v1.0.1): Use useEffect to sync expanded state with route changes.
   // Previously, expanded was only set on initial mount and became stale.
-  const [expanded, setExpanded] = useState(false);
+  const [localExpanded, setLocalExpanded] = useState(false);
+  const isControlled = typeof expandedOverride === 'boolean';
+  const expanded = isControlled ? expandedOverride : localExpanded;
+  const isCurrentSection = categoryContainsSlug(category, currentSlug);
 
   useEffect(() => {
-    const shouldExpand =
-      depth === 0 ||  // Top-level always expanded by default
-      categoryContainsSlug(category, currentSlug);
-    if (shouldExpand) setExpanded(true);
-  }, [currentSlug, category, depth]);
+    if (!isControlled && isCurrentSection) setLocalExpanded(true);
+  }, [isControlled, isCurrentSection]);
+
+  const handleToggle = () => {
+    if (!hasContent) return;
+    if (isControlled) {
+      onToggle?.();
+      return;
+    }
+    setLocalExpanded((current) => !current);
+  };
 
   const CategoryIcon = CATEGORY_ICONS[category.icon] || FileText;
 
@@ -211,13 +237,15 @@ function CategoryGroup({ category, currentSlug, currentLanguage = DEFAULT_LANGUA
     <div>
       {/* Category header */}
       <button
-        onClick={() => hasContent && setExpanded(!expanded)}
+        type="button"
+        onClick={handleToggle}
         className={`
-          w-full flex items-center gap-2 px-2.5 py-[7px] rounded-md text-left
-          hover:bg-white/[0.03] transition-colors group
+          w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-left
+          hover:bg-white/[0.04] transition-colors group
           ${depth > 0 ? 'ml-2.5' : ''}
+          ${isCurrentSection ? 'bg-white/[0.035]' : ''}
         `}
-        aria-expanded={expanded}
+        aria-expanded={hasContent ? expanded : undefined}
       >
         {hasContent && (
           <ChevronRight
@@ -230,17 +258,20 @@ function CategoryGroup({ category, currentSlug, currentLanguage = DEFAULT_LANGUA
         {!hasContent && <div className="w-3 flex-shrink-0" />}
         <CategoryIcon
           size={14}
-          className="flex-shrink-0 text-white/20 group-hover:text-white/40 transition-colors"
+          className={`flex-shrink-0 transition-colors ${
+            isCurrentSection
+              ? 'text-primary/80'
+              : 'text-white/20 group-hover:text-white/45'
+          }`}
           aria-hidden="true"
         />
-        <span className="text-[13px] font-medium text-white/50 group-hover:text-white/75 truncate transition-colors">
+        <span className={`text-[13px] font-medium truncate transition-colors ${
+          isCurrentSection
+            ? 'text-white/80'
+            : 'text-white/50 group-hover:text-white/75'
+        }`}>
           {category.name}
         </span>
-        {hasArticles && (
-          <span className="ml-auto text-[10px] text-white/15 flex-shrink-0 tabular-nums">
-            {category.articles.length}
-          </span>
-        )}
       </button>
 
       {/* Expanded content */}
@@ -260,7 +291,7 @@ function CategoryGroup({ category, currentSlug, currentLanguage = DEFAULT_LANGUA
 
           {/* Articles in this category */}
           {hasArticles && (
-            <div className="ml-[22px] space-y-px mt-0.5 mb-1">
+            <div className="ml-[21px] mt-0.5 mb-1.5 border-l border-white/[0.06] pl-2 space-y-px">
               {category.articles.map((article) => (
                 <ArticleLink
                   key={article.id || article.slug}
@@ -287,20 +318,16 @@ function ArticleLink({ article, categorySlug, currentLanguage, isActive }) {
     <Link
       href={articleHref(article, currentLanguage, categorySlug)}
       className={`
-        flex items-center gap-2 px-2.5 py-[6px] rounded-md text-[13px] transition-all
+        block px-2.5 py-[7px] rounded-md text-[13px] leading-[1.35rem] transition-all
         ${
           isActive
-            ? 'bg-primary/[0.08] text-primary-300 border-l-[3px] border-primary -ml-[3px] pl-[13px] font-medium'
+            ? 'bg-primary/[0.1] text-primary-200 font-medium'
             : 'text-white/40 hover:text-white/65 hover:bg-white/[0.025]'
         }
       `}
       aria-current={isActive ? 'page' : undefined}
     >
-      <FileText
-        size={12}
-        className={`flex-shrink-0 ${isActive ? 'text-primary/70' : 'text-white/15'}`}
-      />
-      <span className="truncate">{article.title}</span>
+      {article.title}
     </Link>
   );
 }

@@ -44,6 +44,7 @@ import {
   Compass,
   FileText,
   Gauge,
+  KeyRound,
   Network,
   Search,
   Server,
@@ -63,6 +64,7 @@ import {
 export default function DocsHome({
   siteConfig,
   categoryTree,
+  developerChatArticle,
   recentArticles,
   currentLanguage = DEFAULT_LANGUAGE,
 }) {
@@ -75,6 +77,8 @@ export default function DocsHome({
   const memChainArticle = recentArticles?.find(
     (article) => (article.translation_key || article.slug) === 'memory-chain-and-encrypted-storage'
   );
+  // [DEVELOPER-CHAT-DOCS 2026-09-24 by Codex] This API is a first-class
+  // homepage destination, independent of the time-ordered article grid.
 
   return (
     <Layout
@@ -135,6 +139,42 @@ export default function DocsHome({
             )}
           </div>
         </motion.section>
+
+        {/* ===== Developer Chat API ===== */}
+        {developerChatArticle && (
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.08 }}
+            className="mb-16 border-y border-primary/20 bg-primary/[0.035] sm:mb-20"
+          >
+            <Link
+              href={articleHref(developerChatArticle, currentLanguage)}
+              className="group grid gap-5 px-1 py-7 sm:grid-cols-[auto_1fr_auto] sm:items-center"
+            >
+              <span className="flex h-11 w-11 items-center justify-center rounded-lg border border-primary/20 bg-primary/[0.08] text-primary">
+                <KeyRound size={20} aria-hidden="true" />
+              </span>
+              <span className="min-w-0">
+                <span className="mb-2 block text-[11px] font-semibold uppercase tracking-wider text-primary-300">
+                  {copy.developerApi}
+                </span>
+                <span className="block text-lg font-medium text-white/90 transition-colors group-hover:text-white">
+                  {developerChatArticle.title}
+                </span>
+                {developerChatArticle.summary && (
+                  <span className="mt-2 block max-w-2xl text-[13px] leading-relaxed text-white/40">
+                    {developerChatArticle.summary}
+                  </span>
+                )}
+              </span>
+              <span className="inline-flex items-center gap-2 text-sm font-medium text-primary-300">
+                {copy.open}
+                <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
+              </span>
+            </Link>
+          </motion.section>
+        )}
 
         {/* ===== Recent Articles ===== */}
         {recentArticles && recentArticles.length > 0 && (
@@ -303,11 +343,18 @@ export async function getDocsHomeProps(lang = DEFAULT_LANGUAGE) {
   ]);
 
   // Handle paginated response ({ results, count, ... }) or raw array
+  let developerChatArticle = null;
   let recentArticles = [];
   if (articleData) {
     const raw = articleData.results || articleData;
     if (Array.isArray(raw)) {
-      recentArticles = raw.slice(0, 6);
+      developerChatArticle = raw.find((article) =>
+        article.translation_key === 'central-chat-https-api-v1' ||
+        article.slug === 'central-chat-https-api-v1'
+      ) || null;
+      recentArticles = raw
+        .filter((article) => article.id !== developerChatArticle?.id)
+        .slice(0, 6);
     }
   }
 
@@ -315,6 +362,7 @@ export async function getDocsHomeProps(lang = DEFAULT_LANGUAGE) {
     props: {
       siteConfig: siteConfig || null,
       categoryTree: categoryTree || [],
+      developerChatArticle,
       recentArticles,
       currentLanguage: lang,
     },

@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Article detail page with full Markdown rendering
  * Modification Reason:
+ *   v1.1.6 - [DOCS-ARTICLE-RTL 2026-10-07 by Codex] Mirror article
+ *     navigation/summary spacing and request SiteConfig in the article locale.
  *   v1.1.5 - [DOCS-UX 2026-08-04 by Codex] Suppress the summary callout only
  *     when it exactly duplicates the first Markdown paragraph.
  *   v1.1.4 - [DOCS-UX 2026-08-04 by Codex] Fix conditional hook ordering,
@@ -40,7 +42,7 @@
  * - BUG FIX: prev/next links now use article.category_slug (from API)
  *   instead of the URL categorySlug param, since articles might change category
  *
- * Last Modified: v1.1.5 - Duplicate-summary guard
+ * Last Modified: v1.1.6 - Localized article config and RTL layout
  * ============================================
  */
 
@@ -396,7 +398,7 @@ export default function ArticlePage({
 
           {/* Summary callout */}
           {showSummary && (
-            <div className="border-l-2 border-primary/60 pl-4 mb-8">
+            <div className="border-s-2 border-primary/60 ps-4 mb-8">
               <p className="text-[14px] text-white/50 leading-[1.75]">
                 {article.summary}
               </p>
@@ -419,7 +421,7 @@ export default function ArticlePage({
                 >
                   <ChevronLeft
                     size={16}
-                    className="text-white/15 group-hover:text-primary/60 transition-colors flex-shrink-0"
+                    className="text-white/15 group-hover:text-primary/60 transition-colors flex-shrink-0 rtl:rotate-180"
                   />
                   <div className="min-w-0">
                     <div className="text-[10px] uppercase tracking-widest text-white/20 mb-1">
@@ -439,7 +441,7 @@ export default function ArticlePage({
                   href={articleHref(article.next_article, currentLanguage, articleCatSlug)}
                   className="group flex items-center justify-end gap-3 p-4 rounded-lg
                     border border-white/[0.04] hover:border-white/[0.1] hover:bg-white/[0.02]
-                    transition-all duration-200 text-right"
+                    transition-all duration-200 text-end"
                 >
                   <div className="min-w-0">
                     <div className="text-[10px] uppercase tracking-widest text-white/20 mb-1">
@@ -451,7 +453,7 @@ export default function ArticlePage({
                   </div>
                   <ChevronRight
                     size={16}
-                    className="text-white/15 group-hover:text-primary/60 transition-colors flex-shrink-0"
+                    className="text-white/15 group-hover:text-primary/60 transition-colors flex-shrink-0 rtl:rotate-180"
                   />
                 </Link>
               ) : (
@@ -461,9 +463,9 @@ export default function ArticlePage({
           </nav>
         </article>
 
-        {/* ===== Right sidebar: Table of Contents (desktop only) ===== */}
+        {/* ===== Contents sidebar at the inline end (desktop only) ===== */}
         {toc.length > 0 && (
-          <aside className="hidden xl:block w-52 flex-shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto py-10 pr-6">
+          <aside className="hidden xl:block w-52 flex-shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto py-10 pe-6">
             <div className="text-[10px] uppercase tracking-[0.1em] text-white/20 mb-4 font-medium">
               {copy.onThisPage}
             </div>
@@ -478,10 +480,10 @@ export default function ArticlePage({
                   }}
                   className={`
                     block text-[12px] leading-relaxed transition-all duration-150 py-[3px] rounded-sm
-                    ${level === 3 ? 'pl-3' : level === 4 ? 'pl-6' : ''}
+                    ${level === 3 ? 'ps-3' : level === 4 ? 'ps-6' : ''}
                     ${
                       activeHeading === id
-                        ? 'text-primary font-medium translate-x-0.5'
+                        ? 'text-primary font-medium translate-x-0.5 rtl:-translate-x-0.5'
                         : 'text-white/20 hover:text-white/45'
                     }
                   `}
@@ -520,7 +522,7 @@ export async function getArticlePageProps(context, lang = DEFAULT_LANGUAGE) {
   }
 
   const [siteConfig, categoryTree, article] = await Promise.all([
-    fetchSiteConfig(),
+    fetchSiteConfig({ lang }),
     fetchCategoryTree({ lang }),
     fetchArticleBySlug(slug, { lang }),
   ]);

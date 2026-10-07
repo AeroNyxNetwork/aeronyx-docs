@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Base styles + highlight.js theme + custom scrollbar
  * Modification Reason:
+ *   v1.1.1 - [DOCS-ARTICLE-RTL 2026-10-07 by Codex] Align article tables,
+ *     quote borders and reading progress with the document direction.
  *   v1.1.0 - [DOCS-UX 2026-08-04 by Codex] Adopt a privacy-preserving
  *     system font stack, reduce decorative geometry, and harden mobile tables,
  *     code blocks, long words, and reduced-motion behavior.
@@ -18,7 +20,7 @@
  * - .markdown-body scopes all markdown-specific overrides
  * - Reading progress bar is controlled by JS in [slug].js
  *
- * Last Modified: v1.1.0 - Responsive system typography and motion safety
+ * Last Modified: v1.1.1 - Direction-aware article typography
  * ============================================
  */
 
@@ -58,12 +60,13 @@ body {
 .reading-progress {
   position: fixed;
   top: 56px; /* below header h-14 */
-  left: 0;
+  inset-inline-start: 0;
   height: 2px;
   background: var(--primary);
   z-index: 50;
   transition: width 0.1s linear;
-  border-radius: 0 1px 1px 0;
+  border-start-end-radius: 1px;
+  border-end-end-radius: 1px;
 }
 
 /* ========== Custom Scrollbar ========== */
@@ -150,10 +153,11 @@ body {
 }
 
 .markdown-body blockquote {
-  border-left: 3px solid var(--primary);
+  border-inline-start: 3px solid var(--primary);
   background: rgba(119, 98, 243, 0.04);
   padding: 0.75rem 1rem;
-  border-radius: 0 8px 8px 0;
+  border-start-end-radius: 8px;
+  border-end-end-radius: 8px;
 }
 
 .markdown-body blockquote p {
@@ -169,7 +173,7 @@ body {
 .markdown-body td {
   border: 1px solid rgba(255, 255, 255, 0.06);
   padding: 0.6rem 1rem;
-  text-align: left;
+  text-align: start;
 }
 
 .markdown-body th {

@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Render article Markdown content with syntax highlighting
  * Modification Reason:
+ *   v1.2.2 - [DOCS-ARTICLE-RTL 2026-10-07 by Codex] Use logical spacing,
+ *     quote borders and table alignment for right-to-left article content.
  *   v1.2.1 - [DOCS-LOCALE-TRANSITION 2026-10-07 by Codex] Keep code and
  *     command text left-to-right inside right-to-left documents.
  *   v1.2.0 - [DOCS-ARTICLE-I18N 2026-10-07 by Codex] Localize article
@@ -34,7 +36,7 @@
  * - className on code block contains language: "language-javascript" etc.
  * - External links automatically get target="_blank"
  *
- * Last Modified: v1.2.1 - Stable code direction in multilingual articles
+ * Last Modified: v1.2.2 - Direction-aware article typography
  * ============================================
  */
 
@@ -192,7 +194,7 @@ const components = {
       {...props}
     >
       {children}
-      <HeadingLink id={id} className="ml-2 opacity-0 group-hover:opacity-40 transition-opacity text-primary" size={16}>
+      <HeadingLink id={id} className="ms-2 opacity-0 group-hover:opacity-40 transition-opacity text-primary" size={16}>
         {children}
       </HeadingLink>
     </h2>
@@ -200,7 +202,7 @@ const components = {
   h3: ({ children, id, ...props }) => (
     <h3 id={id} className="text-[1.25rem] font-medium mt-8 mb-3 text-white/85 leading-snug group" {...props}>
       {children}
-      <HeadingLink id={id} className="ml-2 opacity-0 group-hover:opacity-30 transition-opacity text-primary" size={14}>
+      <HeadingLink id={id} className="ms-2 opacity-0 group-hover:opacity-30 transition-opacity text-primary" size={14}>
         {children}
       </HeadingLink>
     </h3>
@@ -288,7 +290,7 @@ const components = {
   // Blockquotes
   blockquote: ({ children, ...props }) => (
     <blockquote
-      className="border-l-3 border-primary bg-primary/[0.03] rounded-r-lg px-5 py-3.5 my-5"
+      className="border-s-[3px] border-primary bg-primary/[0.03] rounded-e-lg px-5 py-3.5 my-5"
       {...props}
     >
       {children}
@@ -297,17 +299,17 @@ const components = {
 
   // Lists
   ul: ({ children, ...props }) => (
-    <ul className="list-disc list-outside ml-5 mb-5 space-y-1.5 text-[15px] text-white/65" {...props}>
+    <ul className="list-disc list-outside ms-5 mb-5 space-y-1.5 text-[15px] text-white/65" {...props}>
       {children}
     </ul>
   ),
   ol: ({ children, ...props }) => (
-    <ol className="list-decimal list-outside ml-5 mb-5 space-y-1.5 text-[15px] text-white/65" {...props}>
+    <ol className="list-decimal list-outside ms-5 mb-5 space-y-1.5 text-[15px] text-white/65" {...props}>
       {children}
     </ol>
   ),
   li: ({ children, ...props }) => (
-    <li className="leading-[1.75] pl-1" {...props}>
+    <li className="leading-[1.75] ps-1" {...props}>
       {children}
     </li>
   ),
@@ -322,7 +324,7 @@ const components = {
   ),
   th: ({ children, ...props }) => (
     <th
-      className="bg-white/[0.02] px-4 py-2.5 text-left text-[11px] uppercase tracking-wider text-white/40 font-semibold border-b border-white/[0.06]"
+      className="bg-white/[0.02] px-4 py-2.5 text-start text-[11px] uppercase tracking-wider text-white/40 font-semibold border-b border-white/[0.06]"
       {...props}
     >
       {children}

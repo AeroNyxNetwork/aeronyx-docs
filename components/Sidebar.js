@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Tree-structured navigation for docs categories & articles
  * Modification Reason:
+ *   v1.4.2 - [DOCS-LOCALE-TRANSITION 2026-10-07 by Codex] Mirror mobile
+ *     navigation and use logical spacing for right-to-left documents.
  *   v1.4.1 - [DOCS-NAV-ICONS 2026-10-07 by Codex] Match current API icon
  *     names while preserving legacy aliases and navigation destinations.
  *   v1.4.0 - [DOCS-NAV 2026-09-24 by Codex] Replace the fully expanded
@@ -41,7 +43,7 @@
  * - Supports up to 3 nesting levels (visual indent)
  * - expanded state is synced with currentSlug via useEffect
  *
- * Last Modified: v1.4.1 - Compatible category icon names
+ * Last Modified: v1.4.2 - Direction-aware navigation
  * ============================================
  */
 
@@ -66,7 +68,7 @@ import {
   ShieldCheck,
   X,
 } from 'lucide-react';
-import { articleHref, DEFAULT_LANGUAGE, getUiCopy } from '../lib/api';
+import { articleHref, DEFAULT_LANGUAGE, getUiCopy, languageDirection } from '../lib/api';
 
 const CATEGORY_ICONS = {
   // [DOCS-NAV-ICONS 2026-10-07 by Codex] Accept current API icon names
@@ -117,6 +119,9 @@ export default function Sidebar({
   const router = useRouter();
   const currentSlug = router.query.articleSlug || router.query.slug;
   const copy = getUiCopy(currentLanguage);
+  // [DOCS-LOCALE-TRANSITION 2026-10-07 by Codex] Mirror the drawer for RTL.
+  const isRtl = languageDirection(currentLanguage) === 'rtl';
+  const hiddenTranslation = isRtl ? 'translate-x-full' : '-translate-x-full';
   const activeTopLevelSlug = categoryTree.find((category) =>
     categoryContainsSlug(category, currentSlug)
   )?.slug;
@@ -151,11 +156,11 @@ export default function Sidebar({
       {/* Sidebar panel */}
       <aside
         className={`
-          fixed top-14 bottom-0 left-0 z-40
-          w-[280px] bg-[#09090b] border-r border-white/[0.05]
+          fixed top-14 bottom-0 start-0 z-40
+          w-[280px] bg-[#09090b] border-e border-white/[0.05]
           transform transition-transform duration-250 ease-out
           lg:translate-x-0 lg:sticky lg:top-14 lg:z-0 lg:h-[calc(100vh-3.5rem)]
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          ${isOpen ? 'translate-x-0' : hiddenTranslation}
         `}
         role="navigation"
         aria-label={copy.navigation}
@@ -242,6 +247,8 @@ function CategoryGroup({
   };
 
   const CategoryIcon = CATEGORY_ICONS[category.icon] || FileText;
+  const isRtl = languageDirection(currentLanguage) === 'rtl';
+  const chevronRotation = expanded ? 'rotate-90' : isRtl ? 'rotate-180' : '';
 
   return (
     <div>
@@ -250,9 +257,9 @@ function CategoryGroup({
         type="button"
         onClick={handleToggle}
         className={`
-          w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-left
+          w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-start
           hover:bg-white/[0.04] transition-colors group
-          ${depth > 0 ? 'ml-2.5' : ''}
+          ${depth > 0 ? 'ms-2.5' : ''}
           ${isCurrentSection ? 'bg-white/[0.035]' : ''}
         `}
         aria-expanded={hasContent ? expanded : undefined}
@@ -261,7 +268,7 @@ function CategoryGroup({
           <ChevronRight
             size={12}
             className={`text-white/15 transition-transform duration-200 flex-shrink-0
-              ${expanded ? 'rotate-90' : ''}
+              ${chevronRotation}
             `}
           />
         )}
@@ -286,7 +293,7 @@ function CategoryGroup({
 
       {/* Expanded content */}
       {expanded && hasContent && (
-        <div className={`${depth > 0 ? 'ml-2.5' : ''}`}>
+        <div className={`${depth > 0 ? 'ms-2.5' : ''}`}>
           {/* Child categories (recursive) */}
           {hasChildren &&
             category.children.map((child) => (
@@ -301,7 +308,7 @@ function CategoryGroup({
 
           {/* Articles in this category */}
           {hasArticles && (
-            <div className="ml-[21px] mt-0.5 mb-1.5 border-l border-white/[0.06] pl-2 space-y-px">
+            <div className="ms-[21px] mt-0.5 mb-1.5 border-s border-white/[0.06] ps-2 space-y-px">
               {category.articles.map((article) => (
                 <ArticleLink
                   key={article.id || article.slug}

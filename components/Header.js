@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Persistent top bar with logo, search trigger, nav links
  * Modification Reason:
+ *   v1.4.0 - [DOCS-LOCALE-TRANSITION 2026-10-07 by Codex] Preserve anchors
+ *     during language changes and translate the language-selector label.
  *   v1.3.0 - [DOCS-UX 2026-08-04 by Codex] Make language selection available
  *     on mobile without widening the header, and localize navigation labels.
  *   v1.2.0 - Added language switcher for multilingual SEO/GEO routes.
@@ -29,7 +31,7 @@
  * - onOpenSearch opens the search modal
  * - Scroll listener adds subtle shadow after 10px scroll
  *
- * Last Modified: v1.3.0 - Responsive language and navigation controls
+ * Last Modified: v1.4.0 - Anchor-safe language selection
  * ============================================
  */
 
@@ -42,6 +44,7 @@ import {
   SUPPORTED_LANGUAGES,
   getUiCopy,
   languagePathPrefix,
+  localizeDocumentationPath,
   normalizeLanguage,
 } from '../lib/api';
 
@@ -60,25 +63,6 @@ const AeroNyxLogo = () => (
     </g>
   </svg>
 );
-
-function stripLanguagePrefix(path) {
-  const withoutQuery = path.split('?')[0] || '/';
-  const matched = SUPPORTED_LANGUAGES.find(
-    (item) => item.code !== DEFAULT_LANGUAGE
-      && (withoutQuery === `/${item.code}` || withoutQuery.startsWith(`/${item.code}/`))
-  );
-  if (!matched) return path || '/';
-  const query = path.includes('?') ? `?${path.split('?').slice(1).join('?')}` : '';
-  const stripped = withoutQuery.slice(matched.code.length + 1) || '/';
-  return `${stripped}${query}`;
-}
-
-function buildLanguagePath(path, lang) {
-  const basePath = stripLanguagePrefix(path || '/');
-  const prefix = languagePathPrefix(lang);
-  if (!prefix) return basePath || '/';
-  return `${prefix}${basePath === '/' ? '' : basePath}`;
-}
 
 export default function Header({
   onToggleSidebar,
@@ -171,7 +155,7 @@ export default function Header({
           aria-label={copy.searchDocs}
         >
           <Search size={14} className="text-white/25 group-hover:text-white/40 transition-colors" />
-          <span className="text-[13px] text-white/25 flex-1 text-left">{copy.searchDocs}</span>
+          <span className="text-[13px] text-white/25 flex-1 text-start">{copy.searchDocs}</span>
           <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded
             bg-white/[0.04] border border-white/[0.06]
             text-[10px] text-white/20 font-mono leading-none"
@@ -200,11 +184,12 @@ export default function Header({
             <select
               value={normalizedLanguage}
               onChange={(event) => {
-                const nextPath = buildLanguagePath(router.asPath, event.target.value);
+                // [DOCS-LOCALE-TRANSITION 2026-10-07 by Codex] Retain anchors and queries.
+                const nextPath = localizeDocumentationPath(router.asPath, event.target.value);
                 router.push(nextPath);
               }}
               className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-              aria-label="Select documentation language"
+              aria-label={copy.selectLanguage}
             >
               {SUPPORTED_LANGUAGES.map((language) => (
                 <option key={language.code} value={language.code} className="bg-[#09090b] text-white">

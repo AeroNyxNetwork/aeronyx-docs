@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Render article Markdown content with syntax highlighting
  * Modification Reason:
+ *   v1.2.1 - [DOCS-LOCALE-TRANSITION 2026-10-07 by Codex] Keep code and
+ *     command text left-to-right inside right-to-left documents.
  *   v1.2.0 - [DOCS-ARTICLE-I18N 2026-10-07 by Codex] Localize article
  *     controls and accessible section links without changing heading IDs.
  *   v1.1.0 - [DOCS-UX 2026-08-04 by Codex] Use the same Unicode-aware slug
@@ -32,7 +34,7 @@
  * - className on code block contains language: "language-javascript" etc.
  * - External links automatically get target="_blank"
  *
- * Last Modified: v1.2.0 - Localized article controls and accessible section links
+ * Last Modified: v1.2.1 - Stable code direction in multilingual articles
  * ============================================
  */
 
@@ -246,6 +248,7 @@ const components = {
         <pre
           className="bg-black/50 border border-white/[0.06] rounded-lg p-5 overflow-x-auto text-[13px] leading-[1.7]"
           {...props}
+          dir="ltr"
         >
           {children}
         </pre>
@@ -267,6 +270,7 @@ const components = {
         <code
           className="bg-primary/[0.08] border border-primary/[0.1] rounded-[4px] px-[5px] py-[2px] text-[0.85em] font-mono text-primary-200"
           {...props}
+          dir="ltr"
         >
           {children}
         </code>
@@ -275,7 +279,7 @@ const components = {
 
     // Block code — rendered as-is inside <pre>
     return (
-      <code className={`font-mono text-[13px] ${className || ''}`} {...props}>
+      <code className={`font-mono text-[13px] ${className || ''}`} {...props} dir="ltr">
         {children}
       </code>
     );

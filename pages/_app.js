@@ -3,6 +3,8 @@
  * File: docs-frontend/pages/_app.js
  * ============================================
  * Creation Reason: Global providers, styles, and fonts
+ * Modification Reason: v1.0.4 - [DOCS-LOCALE-TRANSITION 2026-10-07 by Codex]
+ *   Synchronize document language and direction after client navigation.
  * Modification Reason: v1.0.1 - Added preload for critical fonts,
  *   meta charset, and error boundary consideration
  * Modification Reason: v1.0.2 - Added complete docs icon metadata.
@@ -23,13 +25,24 @@
  * Last Modified: v1.0.1 - Font preload + meta fixes
  * Last Modified: v1.0.2 - Complete docs icon metadata
  * Last Modified: v1.0.3 - Native system fonts
+ * Last Modified: v1.0.4 - Client navigation language and direction
  * ============================================
  */
 
 import '../styles/globals.css';
 import Head from 'next/head';
+import { useEffect } from 'react';
+import { languageDirection, normalizeLanguage } from '../lib/api';
 
 export default function App({ Component, pageProps }) {
+  // [DOCS-LOCALE-TRANSITION 2026-10-07 by Codex] _document runs on full
+  // requests only; client-side language navigation must update these too.
+  const currentLanguage = normalizeLanguage(pageProps.currentLanguage);
+  useEffect(() => {
+    document.documentElement.lang = currentLanguage;
+    document.documentElement.dir = languageDirection(currentLanguage);
+  }, [currentLanguage]);
+
   return (
     <>
       <Head>

@@ -315,6 +315,7 @@ export default function ArticlePage({
         className="reading-progress"
         style={{ width: `${readProgress}%` }}
         role="progressbar"
+        aria-label={copy.readingProgress}
         aria-valuenow={Math.round(readProgress)}
         aria-valuemin={0}
         aria-valuemax={100}
@@ -326,7 +327,7 @@ export default function ArticlePage({
           className="flex-1 min-w-0 max-w-3xl mx-auto px-5 sm:px-7 py-9 sm:py-10 lg:py-12"
         >
           {/* Breadcrumb */}
-          <nav className="flex items-center gap-2 text-[11px] text-white/20 mb-8" aria-label="Breadcrumb">
+          <nav className="flex items-center gap-2 text-[11px] text-white/20 mb-8" aria-label={copy.breadcrumb}>
             <Link
               href={languagePathPrefix(currentLanguage) || '/'}
               className="hover:text-white/50 transition-colors"
@@ -403,10 +404,11 @@ export default function ArticlePage({
           )}
 
           {/* ===== Markdown content ===== */}
-          <MarkdownRenderer content={article.content} />
+          {/* [DOCS-ARTICLE-I18N 2026-10-07 by Codex] Shared by localized routes. */}
+          <MarkdownRenderer content={article.content} currentLanguage={currentLanguage} />
 
           {/* ===== Prev / Next navigation ===== */}
-          <nav className="mt-14 pt-8 border-t border-white/[0.05]" aria-label="Article navigation">
+          <nav className="mt-14 pt-8 border-t border-white/[0.05]" aria-label={copy.articleNavigation}>
             <div className="grid sm:grid-cols-2 gap-3">
               {article.prev_article ? (
                 <Link
@@ -465,7 +467,7 @@ export default function ArticlePage({
             <div className="text-[10px] uppercase tracking-[0.1em] text-white/20 mb-4 font-medium">
               {copy.onThisPage}
             </div>
-            <nav className="space-y-0.5" aria-label="Table of contents">
+            <nav className="space-y-0.5" aria-label={copy.onThisPage}>
               {toc.map(({ level, text, id }) => (
                 <a
                   key={id}

@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Render article Markdown content with syntax highlighting
  * Modification Reason:
+ *   v1.2.0 - [DOCS-ARTICLE-I18N 2026-10-07 by Codex] Localize article
+ *     controls and accessible section links without changing heading IDs.
  *   v1.1.0 - [DOCS-UX 2026-08-04 by Codex] Use the same Unicode-aware slug
  *     algorithm as rehype-slug and remove duplicated document-title H1s.
  *   v1.0.1 - Fixed react-markdown v9 `inline` prop
@@ -30,7 +32,7 @@
  * - className on code block contains language: "language-javascript" etc.
  * - External links automatically get target="_blank"
  *
- * Last Modified: v1.1.0 - Multilingual heading anchors and title normalization
+ * Last Modified: v1.2.0 - Localized article controls and accessible section links
  * ============================================
  */
 
@@ -40,7 +42,25 @@ import rehypeHighlight from 'rehype-highlight';
 import rehypeSlug from 'rehype-slug';
 import GithubSlugger from 'github-slugger';
 import { Copy, Check, Link as LinkIcon } from 'lucide-react';
-import { useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback } from 'react';
+import { DEFAULT_LANGUAGE, getUiCopy } from '../lib/api';
+
+// [DOCS-ARTICLE-I18N 2026-10-07 by Codex] Keep Markdown components stable
+// while sharing the article locale with nested controls.
+const ArticleCopyContext = createContext(getUiCopy(DEFAULT_LANGUAGE));
+
+function HeadingLink({ id, children, className, size }) {
+  const copy = useContext(ArticleCopyContext);
+  return (
+    <a
+      href={`#${id}`}
+      className={className}
+      aria-label={`${copy.linkToHeading}: ${extractText(children)}`}
+    >
+      <LinkIcon size={size} className="inline" />
+    </a>
+  );
+}
 
 function normalizeDocumentMarkdown(markdown) {
   return (markdown || '')
@@ -103,6 +123,7 @@ function extractLanguage(className) {
 
 function CopyButton({ text }) {
   const [copied, setCopied] = useState(false);
+  const copy = useContext(ArticleCopyContext);
 
   const handleCopy = useCallback(async () => {
     try {
@@ -128,8 +149,8 @@ function CopyButton({ text }) {
         bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06]
         transition-all opacity-0 group-hover:opacity-100
         focus:opacity-100"
-      title={copied ? 'Copied!' : 'Copy code'}
-      aria-label={copied ? 'Copied to clipboard' : 'Copy code to clipboard'}
+      title={copied ? copy.codeCopied : copy.copyCode}
+      aria-label={copied ? copy.codeCopied : copy.copyCode}
     >
       {copied ? (
         <Check size={13} className="text-green-400" />
@@ -169,17 +190,17 @@ const components = {
       {...props}
     >
       {children}
-      <a href={`#${id}`} className="ml-2 opacity-0 group-hover:opacity-40 transition-opacity text-primary" aria-label="Link to heading">
-        <LinkIcon size={16} className="inline" />
-      </a>
+      <HeadingLink id={id} className="ml-2 opacity-0 group-hover:opacity-40 transition-opacity text-primary" size={16}>
+        {children}
+      </HeadingLink>
     </h2>
   ),
   h3: ({ children, id, ...props }) => (
     <h3 id={id} className="text-[1.25rem] font-medium mt-8 mb-3 text-white/85 leading-snug group" {...props}>
       {children}
-      <a href={`#${id}`} className="ml-2 opacity-0 group-hover:opacity-30 transition-opacity text-primary" aria-label="Link to heading">
-        <LinkIcon size={14} className="inline" />
-      </a>
+      <HeadingLink id={id} className="ml-2 opacity-0 group-hover:opacity-30 transition-opacity text-primary" size={14}>
+        {children}
+      </HeadingLink>
     </h3>
   ),
   h4: ({ children, id, ...props }) => (
@@ -335,11 +356,12 @@ const components = {
 // Main Renderer Component
 // ============================================
 
-export default function MarkdownRenderer({ content }) {
+export default function MarkdownRenderer({ content, currentLanguage = DEFAULT_LANGUAGE }) {
+  const copy = getUiCopy(currentLanguage);
   if (!content) {
     return (
       <div className="text-white/20 text-center py-16 text-sm">
-        No content available.
+        {copy.emptyContent}
       </div>
     );
   }
@@ -347,14 +369,16 @@ export default function MarkdownRenderer({ content }) {
   const normalizedContent = normalizeDocumentMarkdown(content);
 
   return (
-    <div className="markdown-body">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeHighlight, rehypeSlug]}
-        components={components}
-      >
-        {normalizedContent}
-      </ReactMarkdown>
-    </div>
+    <ArticleCopyContext.Provider value={copy}>
+      <div className="markdown-body">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeHighlight, rehypeSlug]}
+          components={components}
+        >
+          {normalizedContent}
+        </ReactMarkdown>
+      </div>
+    </ArticleCopyContext.Provider>
   );
 }

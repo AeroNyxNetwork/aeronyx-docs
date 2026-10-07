@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Tree-structured navigation for docs categories & articles
  * Modification Reason:
+ *   v1.4.1 - [DOCS-NAV-ICONS 2026-10-07 by Codex] Match current API icon
+ *     names while preserving legacy aliases and navigation destinations.
  *   v1.4.0 - [DOCS-NAV 2026-09-24 by Codex] Replace the fully expanded
  *     directory with a focused accordion, simplify article rows, remove the
  *     duplicate site footer link, and resolve localized article routes against
@@ -39,7 +41,7 @@
  * - Supports up to 3 nesting levels (visual indent)
  * - expanded state is synced with currentSlug via useEffect
  *
- * Last Modified: v1.3.0 - Localized, product-grade navigation
+ * Last Modified: v1.4.1 - Compatible category icon names
  * ============================================
  */
 
@@ -67,6 +69,14 @@ import {
 import { articleHref, DEFAULT_LANGUAGE, getUiCopy } from '../lib/api';
 
 const CATEGORY_ICONS = {
+  // [DOCS-NAV-ICONS 2026-10-07 by Codex] Accept current API icon names
+  // alongside legacy aliases; category URLs and ordering stay unchanged.
+  compass: Compass,
+  'layout-dashboard': Gauge,
+  network: Network,
+  'code-2': Braces,
+  'circle-help': CircleHelp,
+  'shield-check': ShieldCheck,
   book: BookOpenText,
   folder: Folder,
   code: Braces,

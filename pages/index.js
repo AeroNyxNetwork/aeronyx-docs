@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Documentation homepage / landing page
  * Modification Reason:
+ *   v1.2.1 - [DOCS-HOME-SEO-I18N 2026-10-07 by Codex] Add language
+ *     alternates and concise translated fallbacks without overriding CMS copy.
  *   v1.2.0 - [DOCS-UX 2026-08-04 by Codex] Replace the blog-style gradient
  *     hero, emoji categories, and popularity metadata with a quiet official
  *     reading path and direct category navigation.
@@ -32,7 +34,7 @@
  * - Category cards link to first article or category index
  * - getServerSideProps handles both paginated & raw API responses
  *
- * Last Modified: v1.2.0 - Official reading-path homepage
+ * Last Modified: v1.2.1 - Multilingual homepage metadata and fallback copy
  * ============================================
  */
 
@@ -54,6 +56,7 @@ import Layout from '../components/Layout';
 import {
   articleHref,
   DEFAULT_LANGUAGE,
+  documentationAlternates,
   fetchSiteConfig,
   fetchCategoryTree,
   fetchArticleList,
@@ -69,7 +72,7 @@ export default function DocsHome({
   currentLanguage = DEFAULT_LANGUAGE,
 }) {
   const copy = getUiCopy(currentLanguage);
-  const docsBaseUrl = siteConfig?.docs_base_url || 'https://docs.aeronyx.network';
+  const docsBaseUrl = (siteConfig?.docs_base_url || 'https://docs.aeronyx.network').replace(/\/+$/, '');
   const canonicalUrl = `${docsBaseUrl}${languagePathPrefix(currentLanguage) || '/'}`;
   const primaryArticle = recentArticles?.find(
     (article) => (article.translation_key || article.slug) === 'what-is-aeronyx'
@@ -84,11 +87,12 @@ export default function DocsHome({
     <Layout
       categoryTree={categoryTree}
       siteConfig={siteConfig}
-      title={siteConfig?.seo_title || 'AeroNyx Docs'}
-      description={siteConfig?.seo_description}
+      title={siteConfig?.seo_title || copy.protocolDocumentation}
+      description={siteConfig?.seo_description || copy.documentationDescription}
       meta={{
         keywords: siteConfig?.seo_keywords,
         canonical: canonicalUrl,
+        alternates: documentationAlternates('/', docsBaseUrl),
       }}
       currentLanguage={currentLanguage}
     >
@@ -103,19 +107,19 @@ export default function DocsHome({
         >
           <div className="inline-flex items-center gap-2 mb-6 text-[11px] font-medium text-white/45 tracking-wider uppercase">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
-            {siteConfig?.badge_label || 'Official Documentation'}
+            {siteConfig?.badge_label || copy.officialDocumentation}
           </div>
 
           <h1 className="text-[2.15rem] sm:text-[3rem] lg:text-[3.5rem] font-semibold mb-5 text-white/95 leading-[1.08]">
             {siteConfig?.hero_title || 'AeroNyx'}{' '}
             <span className="text-white/45">
-              {siteConfig?.hero_highlight || 'Protocol Documentation'}
+              {siteConfig?.hero_highlight || copy.protocolDocumentation}
             </span>
           </h1>
 
           <p className="text-[15px] sm:text-[17px] text-white/45 max-w-2xl leading-[1.75]">
             {siteConfig?.hero_description ||
-              'Understand, deploy, and build with the blind, open encrypted coordination protocol for humans, apps, and autonomous agents.'}
+              copy.documentationDescription}
           </p>
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 mt-8">
@@ -337,7 +341,7 @@ function CategoryCard({ category, currentLanguage }) {
 
 export async function getDocsHomeProps(lang = DEFAULT_LANGUAGE) {
   const [siteConfig, categoryTree, articleData] = await Promise.all([
-    fetchSiteConfig(),
+    fetchSiteConfig({ lang }),
     fetchCategoryTree({ lang }),
     fetchArticleList({ lang }),
   ]);

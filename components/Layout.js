@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Wraps all pages with Header, Sidebar, and SearchModal
  * Modification Reason:
+ *   v1.3.1 - [DOCS-HOME-SEO-I18N 2026-10-07 by Codex] Render page-supplied
+ *     language alternates and localize the missing-description fallback.
  *   v1.3.0 - [DOCS-UX 2026-08-04 by Codex] Resolve the site description once
  *     and use the correct Open Graph type for pages versus articles.
  *   v1.2.2 - Support canonical URLs, robots hints, and og:url so SEO/GEO
@@ -39,7 +41,7 @@
  * - Each page should pass categoryTree and siteConfig as props to Layout
  * - Layout does NOT fetch data itself
  *
- * Last Modified: v1.3.0 - Consistent metadata and page semantics
+ * Last Modified: v1.3.1 - Localized metadata and language alternates
  * ============================================
  */
 
@@ -48,6 +50,7 @@ import Head from 'next/head';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import SearchModal from './SearchModal';
+import { getUiCopy } from '../lib/api';
 
 export default function Layout({
   children,
@@ -70,7 +73,7 @@ export default function Layout({
   const resolvedDescription =
     description ||
     siteConfig?.seo_description ||
-    'Official AeroNyx protocol documentation.';
+    getUiCopy(currentLanguage).documentationDescription;
   const normalizedTitle = (title || siteName).trim();
   const fullTitle =
     normalizedTitle === siteName ||
@@ -90,6 +93,9 @@ export default function Layout({
         )}
         {meta.robots && <meta name="robots" content={meta.robots} />}
         {meta.canonical && <link rel="canonical" href={meta.canonical} />}
+        {meta.alternates?.map(({ language, href }) => (
+          <link key={`alternate-${language}`} rel="alternate" hrefLang={language} href={href} />
+        ))}
 
         {/* Open Graph */}
         <meta property="og:title" content={fullTitle} />

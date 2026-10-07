@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Category page showing article list for a given category
  * Modification Reason:
+ *   v1.1.4 - [DOCS-HOME-SEO-I18N 2026-10-07 by Codex] Add language
+ *     alternates and retain the developer API entry on localized home routes.
  *   v1.1.3 - [DOCS-UX 2026-08-04 by Codex] Align category typography,
  *     spacing, empty state, and card geometry with the docs reading system.
  *   v1.1.2 - Add self-referencing canonical URLs for category pages.
@@ -29,7 +31,7 @@
  * - getServerSideProps ensures fresh data on each request
  * - Articles are pre-filtered to is_published=true by the API
  *
- * Last Modified: v1.1.3 - Unified category reading experience
+ * Last Modified: v1.1.4 - Localized category metadata and homepage handoff
  * ============================================
  */
 
@@ -42,6 +44,7 @@ import DocsHome, { getDocsHomeProps } from '../index';
 import {
   articleHref,
   DEFAULT_LANGUAGE,
+  documentationAlternates,
   SUPPORTED_LANGUAGES,
   fetchSiteConfig,
   fetchCategoryTree,
@@ -57,6 +60,7 @@ export default function CategoryPage({
   siteConfig,
   categoryTree,
   recentArticles,
+  developerChatArticle,
   categorySlug,
   articles,
   categoryInfo,
@@ -71,6 +75,7 @@ export default function CategoryPage({
         siteConfig={siteConfig}
         categoryTree={categoryTree}
         recentArticles={recentArticles}
+        developerChatArticle={developerChatArticle}
         currentLanguage={currentLanguage}
       />
     );
@@ -93,7 +98,7 @@ export default function CategoryPage({
   const title = categoryInfo?.name || categorySlug;
   const count = articles?.length || 0;
   const locale = languageLocale(currentLanguage);
-  const docsBaseUrl = siteConfig?.docs_base_url || 'https://docs.aeronyx.network';
+  const docsBaseUrl = (siteConfig?.docs_base_url || 'https://docs.aeronyx.network').replace(/\/+$/, '');
   const canonicalUrl = `${docsBaseUrl}${languagePathPrefix(currentLanguage)}/${categorySlug}`;
 
   return (
@@ -101,8 +106,11 @@ export default function CategoryPage({
       categoryTree={categoryTree}
       siteConfig={siteConfig}
       title={title}
-      description={categoryInfo?.description || `Articles in ${title}`}
-      meta={{ canonical: canonicalUrl }}
+      description={categoryInfo?.description || copy.categoryDescription(title)}
+      meta={{
+        canonical: canonicalUrl,
+        alternates: documentationAlternates(`/${categorySlug}`, docsBaseUrl),
+      }}
       currentLanguage={currentLanguage}
     >
       <div className="max-w-4xl mx-auto px-5 sm:px-7 py-9 sm:py-10 lg:py-12">
@@ -222,7 +230,7 @@ export async function getCategoryPageProps(context, lang = DEFAULT_LANGUAGE) {
   }
 
   const [siteConfig, categoryTree, articleData] = await Promise.all([
-    fetchSiteConfig(),
+    fetchSiteConfig({ lang }),
     fetchCategoryTree({ lang }),
     fetchArticleList({ category: categorySlug, lang }),
   ]);

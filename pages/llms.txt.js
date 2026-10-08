@@ -60,6 +60,7 @@ import {
   LLMS_LANGUAGES,
   getAllLlmsFallbacks,
   getLlmsFallback,
+  publicLlmsText,
 } from '../lib/llmsFallbacks';
 
 const CANONICAL_API_BASE = 'https://api.aeronyx.network/api';
@@ -94,7 +95,9 @@ async function fetchLlmsVariant(apiBase, lang) {
       if (!response.ok) continue;
 
       const text = (await response.text()).trim();
-      if (text.startsWith('# ')) return text;
+      // [DOCS-ARTICLE-RETIREMENT 2026-10-09 by Codex] Public page retirement
+      // also applies while the upstream CMS retains its recoverable original.
+      if (text.startsWith('# ')) return publicLlmsText(text, lang);
     } catch {
       // [DOCS-EDITORIAL 2026-08-04 by Codex] A single language or API origin
       // must not collapse the complete GEO document. The caller supplies the

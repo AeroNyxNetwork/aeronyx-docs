@@ -36,7 +36,7 @@
  * ============================================
  */
 
-import { getLlmsFallback } from '../../lib/llmsFallbacks';
+import { getLlmsFallback, publicLlmsText } from '../../lib/llmsFallbacks';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.aeronyx.network/api';
 const SUPPORTED_LANGUAGES = new Set([
@@ -80,7 +80,11 @@ export async function getServerSideProps({ params, res }) {
   const query = lang ? `?${new URLSearchParams({ lang }).toString()}` : '';
 
   try {
-    const text = (await fetchLocalizedLlms(query)) || getLlmsFallback(lang || 'en');
+    // [DOCS-ARTICLE-RETIREMENT 2026-10-09 by Codex] Match root machine output
+    // and the public menu while keeping the upstream record recoverable.
+    const text = publicLlmsText(
+      (await fetchLocalizedLlms(query)) || getLlmsFallback(lang || 'en'), lang || 'en'
+    );
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=300');
     res.write(text);

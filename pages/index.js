@@ -80,8 +80,12 @@ export default function DocsHome({
   const copy = getUiCopy(currentLanguage);
   const docsBaseUrl = (siteConfig?.docs_base_url || 'https://docs.aeronyx.network').replace(/\/+$/, '');
   const canonicalUrl = `${docsBaseUrl}${languagePathPrefix(currentLanguage) || '/'}`;
+  // [DOCS-ARTICLE-RETIREMENT 2026-10-09 by Codex] Keep a useful introduction
+  // when a locale's historical node snapshot has been unpublished in the CMS.
   const primaryArticle = recentArticles?.find(
     (article) => (article.translation_key || article.slug) === 'what-is-aeronyx'
+  ) || recentArticles?.find(
+    (article) => (article.translation_key || article.slug) === 'aeronyx-app-and-protocol-architecture'
   );
   const memChainArticle = recentArticles?.find(
     (article) => (article.translation_key || article.slug) === 'memory-chain-and-encrypted-storage'

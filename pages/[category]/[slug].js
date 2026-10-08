@@ -67,6 +67,7 @@ import {
   fetchArticleBySlug,
   fetchCategoryTree,
   getUiCopy,
+  isPublicDocumentationArticle,
   languageDirection,
   languageLocale,
   languagePathPrefix,
@@ -724,7 +725,11 @@ export default function ArticlePage({
       }}
     >
       <Head>
-        {SUPPORTED_LANGUAGES.map((language) => {
+        {/* [DOCS-ARTICLE-RETIREMENT 2026-10-09 by Codex] Retained translations
+            must not advertise the retired variant as an alternate page. */}
+        {SUPPORTED_LANGUAGES.filter((language) => isPublicDocumentationArticle(
+          { ...article, language: language.code }
+        )).map((language) => {
           return (
             <link
               key={language.code}

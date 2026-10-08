@@ -33,6 +33,13 @@ const nextConfig = {
   // from whitepaper/developer labels to protocol-first pages.
   async redirects() {
     return [
+      // [DOCS-ARTICLE-RETIREMENT 2026-10-09 by Codex] Retire the outdated
+      // Simplified Chinese snapshot without breaking bookmarks or other locales.
+      {
+        source: '/zh-Hans/intro/what-is-aeronyx',
+        destination: '/zh-Hans/intro',
+        permanent: true,
+      },
       {
         source: '/aeronyx-whitepaper/technical-white-paper',
         destination: '/intro/aeronyx-app-and-protocol-architecture',

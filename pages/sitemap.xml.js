@@ -31,6 +31,8 @@
  * ============================================
  */
 
+import { isPublicDocumentationArticle } from '../lib/api';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.aeronyx.network/api';
 const DOCS_BASE_URL =
   process.env.NEXT_PUBLIC_DOCS_BASE_URL || 'https://docs.aeronyx.network';
@@ -80,7 +82,9 @@ async function fetchArticles(lang) {
   const url = `${API_BASE}/docs/articles/${query ? `?${query}` : ''}`;
   const response = await fetch(url, { headers: { Accept: 'application/json' } });
   if (!response.ok) return [];
-  return normalizeArticleList(await response.json());
+  return normalizeArticleList(await response.json()).filter((article) =>
+    isPublicDocumentationArticle(article, lang)
+  );
 }
 
 function articleUrl(article, lang) {
@@ -172,12 +176,14 @@ export async function getServerSideProps({ res }) {
   }
 
   for (const group of articleGroups.values()) {
-    const alternates = LANGUAGES.map((lang) => {
-      const article = group[lang] || group.en || Object.values(group)[0];
+    // [DOCS-ARTICLE-RETIREMENT 2026-10-09 by Codex] Missing or unpublished
+    // translations are not alternate pages. Never manufacture a localized URL.
+    const alternates = LANGUAGES.filter((lang) => group[lang]).map((lang) => {
+      const article = group[lang];
       return { lang, href: articleUrl(article, lang) };
     });
-    const defaultArticle = group.en || Object.values(group)[0];
-    alternates.push({ lang: 'x-default', href: articleUrl(defaultArticle, 'en') });
+    const defaultLanguage = group.en ? 'en' : Object.keys(group)[0];
+    alternates.push({ lang: 'x-default', href: articleUrl(group[defaultLanguage], defaultLanguage) });
 
     for (const lang of LANGUAGES) {
       const article = group[lang];

@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Category page showing article list for a given category
  * Modification Reason:
+ *   v1.2.0 - [DOCS-NAVIGATION 2026-10-08 by Codex] Use the shared reader
+ *     sections for category contents without changing article URLs.
  *   v1.1.4 - [DOCS-HOME-SEO-I18N 2026-10-07 by Codex] Add language
  *     alternates and retain the developer API entry on localized home routes.
  *   v1.1.3 - [DOCS-UX 2026-08-04 by Codex] Align category typography,
@@ -31,7 +33,7 @@
  * - getServerSideProps ensures fresh data on each request
  * - Articles are pre-filtered to is_published=true by the API
  *
- * Last Modified: v1.1.4 - Localized category metadata and homepage handoff
+ * Last Modified: v1.2.0 - Category indexes aligned with navigation
  * ============================================
  */
 
@@ -49,10 +51,13 @@ import {
   fetchSiteConfig,
   fetchCategoryTree,
   fetchArticleList,
+  findNavigationCategory,
   getUiCopy,
   languageLocale,
   languagePathPrefix,
   normalizeLanguage,
+  navigationArticles,
+  navigationCategoryName,
 } from '../../lib/api';
 
 export default function CategoryPage({
@@ -235,28 +240,23 @@ export async function getCategoryPageProps(context, lang = DEFAULT_LANGUAGE) {
     fetchArticleList({ category: categorySlug, lang }),
   ]);
 
-  // Find category info from tree (recursive search)
-  let categoryInfo = null;
-  const findCategory = (tree, slug) => {
-    for (const cat of tree) {
-      if (cat.slug === slug) return cat;
-      if (cat.children) {
-        const found = findCategory(cat.children, slug);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-
-  if (categoryTree) {
-    categoryInfo = findCategory(categoryTree, categorySlug);
-  }
+  // [DOCS-NAVIGATION 2026-10-08 by Codex] The tree supplies membership and
+  // ordering; the original API list enriches cards, not their destinations.
+  const categoryInfo = findNavigationCategory(categoryTree, categorySlug);
 
   let articles = [];
   if (articleData) {
     const raw = articleData.results || articleData;
     if (Array.isArray(raw)) articles = raw;
   }
+  if (categoryInfo) {
+    const details = new Map(articles.map((article) => [article.id, article]));
+    articles = navigationArticles(categoryInfo).map((article) => ({
+      ...details.get(article.id),
+      ...article,
+    }));
+  }
+  const fallbackName = navigationCategoryName(categorySlug, lang);
 
   return {
     props: {
@@ -267,7 +267,7 @@ export async function getCategoryPageProps(context, lang = DEFAULT_LANGUAGE) {
       currentLanguage: lang,
       categoryInfo: categoryInfo
         ? { name: categoryInfo.name, description: categoryInfo.description || '' }
-        : null,
+        : fallbackName ? { name: fallbackName, description: '' } : null,
     },
   };
 }

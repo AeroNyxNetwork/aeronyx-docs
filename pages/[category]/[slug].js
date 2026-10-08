@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Article detail page with full Markdown rendering
  * Modification Reason:
+ *   v1.2.0 - [DOCS-NAVIGATION 2026-10-08 by Codex] Align breadcrumbs and
+ *     reading order with shared sections while preserving canonical URLs.
  *   v1.1.7 - [DOCS-CHAT-AI-PROMPT 2026-10-08 by Codex] Add a local-only,
  *     translated integration prompt builder to the chat reference article.
  *   v1.1.6 - [DOCS-ARTICLE-RTL 2026-10-07 by Codex] Mirror article
@@ -40,11 +42,11 @@
  * ⚠️ Important Note for Next Developer:
  * - TOC is extracted client-side from markdown headings
  * - Article views are incremented server-side by Django on each fetch
- * - prev_article / next_article come from ArticleDetailSerializer
+ * - Navigation supplies reading order; serializer neighbors remain a fallback
  * - BUG FIX: prev/next links now use article.category_slug (from API)
  *   instead of the URL categorySlug param, since articles might change category
  *
- * Last Modified: v1.1.7 - Copyable, scoped chat integration prompts
+ * Last Modified: v1.2.0 - Reader sections with stable canonical routes
  * ============================================
  */
 
@@ -58,6 +60,7 @@ import CategoryPage, { getCategoryPageProps } from './index';
 import MarkdownRenderer, { extractTOC } from '../../components/MarkdownRenderer';
 import {
   articleHref,
+  navigationArticleContext,
   DEFAULT_LANGUAGE,
   SUPPORTED_LANGUAGES,
   fetchSiteConfig,
@@ -648,6 +651,13 @@ export default function ArticlePage({
 
   // BUG FIX (v1.0.1): Use article's own category_slug for prev/next links
   const articleCatSlug = article.category_slug || categorySlug;
+  // [DOCS-NAVIGATION 2026-10-08 by Codex] CMS category determines the URL;
+  // reader section determines the breadcrumb and adjacent reading links.
+  const navigationContext = navigationArticleContext(categoryTree, article);
+  const sectionSlug = navigationContext?.section.slug || articleCatSlug;
+  const sectionName = navigationContext?.section.name || article.category_name || articleCatSlug;
+  const previousArticle = navigationContext ? navigationContext.previous : article.prev_article;
+  const nextArticle = navigationContext ? navigationContext.next : article.next_article;
   const showSummary = Boolean(
     article.summary && !summaryRepeatsFirstParagraph(article.content, article.summary)
   );
@@ -667,8 +677,8 @@ export default function ArticlePage({
       {
         '@type': 'ListItem',
         position: 2,
-        name: article.category_name || articleCatSlug,
-        item: `${docsBaseUrl}${languagePathPrefix(currentLanguage)}/${articleCatSlug}`,
+        name: sectionName,
+        item: `${docsBaseUrl}${languagePathPrefix(currentLanguage)}/${sectionSlug}`,
       },
       {
         '@type': 'ListItem',
@@ -764,13 +774,13 @@ export default function ArticlePage({
               {copy.docs}
             </Link>
             <span className="text-white/10">/</span>
-            {article.category_name && (
+            {sectionName && (
               <>
                 <Link
-                  href={`${languagePathPrefix(currentLanguage)}/${articleCatSlug}`}
+                  href={`${languagePathPrefix(currentLanguage)}/${sectionSlug}`}
                   className="hover:text-white/50 transition-colors"
                 >
-                  {article.category_name}
+                  {sectionName}
                 </Link>
                 <span className="text-white/10">/</span>
               </>
@@ -843,9 +853,9 @@ export default function ArticlePage({
           {/* ===== Prev / Next navigation ===== */}
           <nav className="mt-14 pt-8 border-t border-white/[0.05]" aria-label={copy.articleNavigation}>
             <div className="grid sm:grid-cols-2 gap-3">
-              {article.prev_article ? (
+              {previousArticle ? (
                 <Link
-                  href={articleHref(article.prev_article, currentLanguage, articleCatSlug)}
+                  href={articleHref(previousArticle, currentLanguage, articleCatSlug)}
                   className="group flex items-center gap-3 p-4 rounded-lg
                     border border-white/[0.04] hover:border-white/[0.1] hover:bg-white/[0.02]
                     transition-all duration-200"
@@ -859,7 +869,7 @@ export default function ArticlePage({
                       {copy.previous}
                     </div>
                     <div className="text-[13px] text-white/50 group-hover:text-white/75 truncate transition-colors">
-                      {article.prev_article.title}
+                      {previousArticle.title}
                     </div>
                   </div>
                 </Link>
@@ -867,9 +877,9 @@ export default function ArticlePage({
                 <div />
               )}
 
-              {article.next_article ? (
+              {nextArticle ? (
                 <Link
-                  href={articleHref(article.next_article, currentLanguage, articleCatSlug)}
+                  href={articleHref(nextArticle, currentLanguage, articleCatSlug)}
                   className="group flex items-center justify-end gap-3 p-4 rounded-lg
                     border border-white/[0.04] hover:border-white/[0.1] hover:bg-white/[0.02]
                     transition-all duration-200 text-end"
@@ -879,7 +889,7 @@ export default function ArticlePage({
                       {copy.next}
                     </div>
                     <div className="text-[13px] text-white/50 group-hover:text-white/75 truncate transition-colors">
-                      {article.next_article.title}
+                      {nextArticle.title}
                     </div>
                   </div>
                   <ChevronRight

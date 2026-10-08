@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Tree-structured navigation for docs categories & articles
  * Modification Reason:
+ *   v1.5.0 - [DOCS-NAVIGATION 2026-10-08 by Codex] Match section reading
+ *     order, retain original article routes, and identify each submenu.
  *   v1.4.2 - [DOCS-LOCALE-TRANSITION 2026-10-07 by Codex] Mirror mobile
  *     navigation and use logical spacing for right-to-left documents.
  *   v1.4.1 - [DOCS-NAV-ICONS 2026-10-07 by Codex] Match current API icon
@@ -43,7 +45,7 @@
  * - Supports up to 3 nesting levels (visual indent)
  * - expanded state is synced with currentSlug via useEffect
  *
- * Last Modified: v1.4.2 - Direction-aware navigation
+ * Last Modified: v1.5.0 - Reader-oriented section navigation
  * ============================================
  */
 
@@ -282,7 +284,7 @@ function CategoryGroup({
           }`}
           aria-hidden="true"
         />
-        <span className={`text-[13px] font-medium truncate transition-colors ${
+        <span className={`min-w-0 text-[13px] font-medium leading-5 transition-colors ${
           isCurrentSection
             ? 'text-white/80'
             : 'text-white/50 group-hover:text-white/75'
@@ -293,19 +295,8 @@ function CategoryGroup({
 
       {/* Expanded content */}
       {expanded && hasContent && (
-        <div className={`${depth > 0 ? 'ms-2.5' : ''}`}>
-          {/* Child categories (recursive) */}
-          {hasChildren &&
-            category.children.map((child) => (
-              <CategoryGroup
-                key={child.id || child.slug}
-                category={child}
-                currentSlug={currentSlug}
-                currentLanguage={currentLanguage}
-                depth={depth + 1}
-              />
-            ))}
-
+        <div className={`${depth > 0 ? 'ms-2.5' : ''}`} role="group" aria-label={category.name}>
+          {/* [DOCS-NAVIGATION 2026-10-08 by Codex] Guides precede console subgroups. */}
           {/* Articles in this category */}
           {hasArticles && (
             <div className="ms-[21px] mt-0.5 mb-1.5 border-s border-white/[0.06] ps-2 space-y-px">
@@ -320,6 +311,17 @@ function CategoryGroup({
               ))}
             </div>
           )}
+          {/* Child categories (recursive) */}
+          {hasChildren &&
+            category.children.map((child) => (
+              <CategoryGroup
+                key={child.id || child.slug}
+                category={child}
+                currentSlug={currentSlug}
+                currentLanguage={currentLanguage}
+                depth={depth + 1}
+              />
+            ))}
         </div>
       )}
     </div>

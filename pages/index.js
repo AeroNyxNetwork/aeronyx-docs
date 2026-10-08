@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Documentation homepage / landing page
  * Modification Reason:
+ *   v1.3.0 - [DOCS-NAVIGATION 2026-10-08 by Codex] Expose the chat guide
+ *     in every available language and align home cards with reader sections.
  *   v1.2.1 - [DOCS-HOME-SEO-I18N 2026-10-07 by Codex] Add language
  *     alternates and concise translated fallbacks without overriding CMS copy.
  *   v1.2.0 - [DOCS-UX 2026-08-04 by Codex] Replace the blog-style gradient
@@ -34,7 +36,7 @@
  * - Category cards link to first article or category index
  * - getServerSideProps handles both paginated & raw API responses
  *
- * Last Modified: v1.2.1 - Multilingual homepage metadata and fallback copy
+ * Last Modified: v1.3.0 - First-class localized developer integration entry
  * ============================================
  */
 
@@ -42,10 +44,10 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
+  Braces,
   CircleHelp,
   Compass,
   FileText,
-  Gauge,
   KeyRound,
   Network,
   Search,
@@ -62,6 +64,10 @@ import {
   fetchArticleList,
   getUiCopy,
   languagePathPrefix,
+  navigationArticleContext,
+  navigationArticles,
+  findNavigationCategory,
+  navigationCategoryName,
 } from '../lib/api';
 
 export default function DocsHome({
@@ -80,8 +86,8 @@ export default function DocsHome({
   const memChainArticle = recentArticles?.find(
     (article) => (article.translation_key || article.slug) === 'memory-chain-and-encrypted-storage'
   );
-  // [DEVELOPER-CHAT-DOCS 2026-09-24 by Codex] This API is a first-class
-  // homepage destination, independent of the time-ordered article grid.
+  // [DOCS-NAVIGATION 2026-10-08 by Codex] The integration guide is a
+  // first-class destination, independent of the time-ordered article grid.
 
   return (
     <Layout
@@ -144,7 +150,7 @@ export default function DocsHome({
           </div>
         </motion.section>
 
-        {/* ===== Developer Chat API ===== */}
+        {/* ===== Developer integration ===== */}
         {developerChatArticle && (
           <motion.section
             initial={{ opacity: 0, y: 16 }}
@@ -161,7 +167,7 @@ export default function DocsHome({
               </span>
               <span className="min-w-0">
                 <span className="mb-2 block text-[11px] font-semibold uppercase tracking-wider text-primary-300">
-                  {copy.developerApi}
+                  {navigationCategoryName('developers', currentLanguage)}
                 </span>
                 <span className="block text-lg font-medium text-white/90 transition-colors group-hover:text-white">
                   {developerChatArticle.title}
@@ -202,7 +208,7 @@ export default function DocsHome({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: 0.15 + i * 0.05 }}
                 >
-                  <ArticleCard article={article} currentLanguage={currentLanguage} index={i} />
+                  <ArticleCard article={article} categoryTree={categoryTree} currentLanguage={currentLanguage} index={i} />
                 </motion.div>
               ))}
             </div>
@@ -259,7 +265,8 @@ export default function DocsHome({
 // Sub-components
 // ============================================
 
-function ArticleCard({ article, currentLanguage, index }) {
+function ArticleCard({ article, categoryTree, currentLanguage, index }) {
+  const sectionName = navigationArticleContext(categoryTree, article)?.section.name || article.category_name;
   const href = articleHref(article, currentLanguage);
 
   return (
@@ -272,9 +279,9 @@ function ArticleCard({ article, currentLanguage, index }) {
         <span className="text-[11px] text-white/20 font-mono tabular-nums">
           {String(index + 1).padStart(2, '0')}
         </span>
-        {article.category_name && (
+        {sectionName && (
           <span className="text-[10px] text-primary/60 uppercase tracking-wider">
-            {article.category_name}
+            {sectionName}
           </span>
         )}
       </div>
@@ -295,8 +302,8 @@ function CategoryCard({ category, currentLanguage }) {
   const href = `${languagePathPrefix(currentLanguage)}/${category.slug}`;
   const iconMap = {
     intro: Compass,
+    developers: Braces,
     'node-operators': Server,
-    nodeboard: Gauge,
     network: Network,
     faq: CircleHelp,
     articles: ShieldCheck,
@@ -347,20 +354,18 @@ export async function getDocsHomeProps(lang = DEFAULT_LANGUAGE) {
   ]);
 
   // Handle paginated response ({ results, count, ... }) or raw array
-  let developerChatArticle = null;
-  let recentArticles = [];
-  if (articleData) {
-    const raw = articleData.results || articleData;
-    if (Array.isArray(raw)) {
-      developerChatArticle = raw.find((article) =>
-        article.translation_key === 'central-chat-https-api-v1' ||
-        article.slug === 'central-chat-https-api-v1'
-      ) || null;
-      recentArticles = raw
-        .filter((article) => article.id !== developerChatArticle?.id)
-        .slice(0, 6);
-    }
-  }
+  const raw = articleData?.results || articleData;
+  const publishedArticles = Array.isArray(raw) ? raw : [];
+  // [DOCS-NAVIGATION 2026-10-08 by Codex] Prefer the published guide in this
+  // locale, not an untranslated English API. The tree keeps the entry usable
+  // when the separate recent-article request fails or its first page changes.
+  const developerArticles = navigationArticles(findNavigationCategory(categoryTree, 'developers'));
+  const entry = developerArticles[0];
+  const developerChatArticle = entry
+    ? { ...publishedArticles.find((article) => article.id === entry.id), ...entry } : null;
+  const recentArticles = publishedArticles
+    .filter((article) => article.id !== developerChatArticle?.id)
+    .slice(0, 6);
 
   return {
     props: {

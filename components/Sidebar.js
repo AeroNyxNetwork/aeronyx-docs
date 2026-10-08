@@ -4,6 +4,8 @@
  * ============================================
  * Creation Reason: Tree-structured navigation for docs categories & articles
  * Modification Reason:
+ *   v1.5.1 - [DOCS-NAV-DETAILS 2026-10-08 by Codex] Add section overview
+ *     links, category active states and keyboard-safe mobile navigation.
  *   v1.5.0 - [DOCS-NAVIGATION 2026-10-08 by Codex] Match section reading
  *     order, retain original article routes, and identify each submenu.
  *   v1.4.2 - [DOCS-LOCALE-TRANSITION 2026-10-07 by Codex] Mirror mobile
@@ -45,11 +47,11 @@
  * - Supports up to 3 nesting levels (visual indent)
  * - expanded state is synced with currentSlug via useEffect
  *
- * Last Modified: v1.5.0 - Reader-oriented section navigation
+ * Last Modified: v1.5.1 - Section overviews and keyboard-safe drawer
  * ============================================
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useId } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import {
@@ -70,7 +72,10 @@ import {
   ShieldCheck,
   X,
 } from 'lucide-react';
-import { articleHref, DEFAULT_LANGUAGE, getUiCopy, languageDirection } from '../lib/api';
+import {
+  articleHref, DEFAULT_LANGUAGE, documentationRouteContext, findNavigationCategory,
+  getUiCopy, languageDirection, languagePathPrefix, navigationOverviewLabel,
+} from '../lib/api';
 
 const CATEGORY_ICONS = {
   // [DOCS-NAV-ICONS 2026-10-07 by Codex] Accept current API icon names
@@ -119,23 +124,26 @@ export default function Sidebar({
   currentLanguage = DEFAULT_LANGUAGE,
 }) {
   const router = useRouter();
-  const currentSlug = router.query.articleSlug || router.query.slug;
+  const { articleSlug: currentSlug, categorySlug: currentCategorySlug } = documentationRouteContext(router.query);
+  const panelRef = useRef(null);
+  const closeButtonRef = useRef(null);
   const copy = getUiCopy(currentLanguage);
   // [DOCS-LOCALE-TRANSITION 2026-10-07 by Codex] Mirror the drawer for RTL.
   const isRtl = languageDirection(currentLanguage) === 'rtl';
   const hiddenTranslation = isRtl ? 'translate-x-full' : '-translate-x-full';
   const activeTopLevelSlug = categoryTree.find((category) =>
-    categoryContainsSlug(category, currentSlug)
+    currentSlug ? categoryContainsSlug(category, currentSlug)
+      : Boolean(findNavigationCategory([category], currentCategorySlug))
   )?.slug;
   const [expandedTopLevelSlug, setExpandedTopLevelSlug] = useState(
     activeTopLevelSlug || null
   );
 
   // Keep the reader's current chapter visible after client-side navigation.
-  // On overview pages, the directory stays compact until a chapter is chosen.
+  // [DOCS-NAV-DETAILS 2026-10-08 by Codex] Category indexes are chapters too.
   useEffect(() => {
     if (activeTopLevelSlug) setExpandedTopLevelSlug(activeTopLevelSlug);
-  }, [activeTopLevelSlug]);
+  }, [activeTopLevelSlug, currentSlug, currentCategorySlug]);
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
@@ -143,6 +151,44 @@ export default function Sidebar({
     router.events.on('routeChangeComplete', handleRouteChange);
     return () => router.events.off('routeChangeComplete', handleRouteChange);
   }, [router, onClose]);
+
+  // [DOCS-NAV-DETAILS 2026-10-08 by Codex] Keep keyboard focus inside the
+  // open mobile drawer and restore the trigger when it closes. CSS visibility
+  // removes the closed drawer from keyboard/accessibility navigation.
+  useEffect(() => {
+    if (!isOpen) return;
+    const desktop = window.matchMedia('(min-width: 1024px)');
+    if (desktop.matches) return;
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    closeButtonRef.current?.focus();
+    const closeOnDesktop = () => { if (desktop.matches) onClose?.(); };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose?.();
+      } else if (event.key === 'Tab') {
+        const links = [...(panelRef.current?.querySelectorAll('a[href], button:not([disabled])') || [])]
+          .filter((element) => element.getClientRects().length > 0);
+        const first = links[0];
+        const last = links[links.length - 1];
+        const outside = !panelRef.current?.contains(document.activeElement);
+        if (first && (outside || (event.shiftKey ? document.activeElement === first : document.activeElement === last))) {
+          event.preventDefault();
+          (event.shiftKey ? last : first).focus();
+        }
+      }
+    };
+    desktop.addEventListener('change', closeOnDesktop);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      desktop.removeEventListener('change', closeOnDesktop);
+      document.removeEventListener('keydown', handleKeyDown);
+      if (previousFocus?.isConnected && previousFocus.getClientRects().length > 0) previousFocus.focus();
+    };
+  }, [isOpen, onClose]);
 
   return (
     <>
@@ -157,24 +203,27 @@ export default function Sidebar({
 
       {/* Sidebar panel */}
       <aside
+        ref={panelRef}
         className={`
-          fixed top-14 bottom-0 start-0 z-40
-          w-[280px] bg-[#09090b] border-e border-white/[0.05]
+          fixed top-14 bottom-0 start-0 z-40 flex flex-col
+          w-[280px] max-w-full bg-[#09090b] border-e border-white/[0.05]
           transform transition-transform duration-250 ease-out
           lg:translate-x-0 lg:sticky lg:top-14 lg:z-0 lg:h-[calc(100vh-3.5rem)]
-          ${isOpen ? 'translate-x-0' : hiddenTranslation}
+          ${isOpen ? 'translate-x-0 visible' : `${hiddenTranslation} invisible lg:visible`}
         `}
         role="navigation"
         aria-label={copy.navigation}
       >
         {/* Mobile close button */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.05] lg:hidden">
+        <div className="flex shrink-0 items-center justify-between px-4 py-3 border-b border-white/[0.05] lg:hidden">
           <span className="text-[10px] font-medium text-white/30 uppercase tracking-widest">
             {copy.navigation}
           </span>
           <button
+            ref={closeButtonRef}
+            type="button"
             onClick={onClose}
-            className="p-1 rounded hover:bg-white/5 transition-colors"
+            className="p-1 rounded hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary transition-colors"
             aria-label={copy.close}
           >
             <X size={16} className="text-white/30" />
@@ -182,7 +231,7 @@ export default function Sidebar({
         </div>
 
         {/* Scrollable nav */}
-        <nav className="sidebar-scroll overflow-y-auto h-full py-4 px-3">
+        <nav className="sidebar-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain py-4 px-3">
           {categoryTree.length === 0 ? (
             <div className="px-3 py-12 text-center">
               <div className="text-white/20 text-sm leading-relaxed">{copy.noCategories}</div>
@@ -194,6 +243,7 @@ export default function Sidebar({
                   key={category.id || category.slug}
                   category={category}
                   currentSlug={currentSlug}
+                  currentCategorySlug={currentCategorySlug}
                   currentLanguage={currentLanguage}
                   depth={0}
                   expandedOverride={expandedTopLevelSlug === category.slug}
@@ -219,6 +269,7 @@ export default function Sidebar({
 function CategoryGroup({
   category,
   currentSlug,
+  currentCategorySlug,
   currentLanguage = DEFAULT_LANGUAGE,
   depth = 0,
   expandedOverride,
@@ -227,17 +278,20 @@ function CategoryGroup({
   const hasArticles = category.articles && category.articles.length > 0;
   const hasChildren = category.children && category.children.length > 0;
   const hasContent = hasArticles || hasChildren;
+  const groupId = `docs-group-${useId()}`;
 
   // BUG FIX (v1.0.1): Use useEffect to sync expanded state with route changes.
   // Previously, expanded was only set on initial mount and became stale.
   const [localExpanded, setLocalExpanded] = useState(false);
   const isControlled = typeof expandedOverride === 'boolean';
   const expanded = isControlled ? expandedOverride : localExpanded;
-  const isCurrentSection = categoryContainsSlug(category, currentSlug);
+  const isCurrentCategory = !currentSlug && category.slug === currentCategorySlug;
+  const isCurrentSection = currentSlug ? categoryContainsSlug(category, currentSlug)
+    : Boolean(findNavigationCategory([category], currentCategorySlug));
 
   useEffect(() => {
     if (!isControlled && isCurrentSection) setLocalExpanded(true);
-  }, [isControlled, isCurrentSection]);
+  }, [isControlled, isCurrentSection, currentSlug, currentCategorySlug]);
 
   const handleToggle = () => {
     if (!hasContent) return;
@@ -260,11 +314,12 @@ function CategoryGroup({
         onClick={handleToggle}
         className={`
           w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-start
-          hover:bg-white/[0.04] transition-colors group
+          hover:bg-white/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary transition-colors group
           ${depth > 0 ? 'ms-2.5' : ''}
           ${isCurrentSection ? 'bg-white/[0.035]' : ''}
         `}
         aria-expanded={hasContent ? expanded : undefined}
+        aria-controls={hasContent ? groupId : undefined}
       >
         {hasContent && (
           <ChevronRight
@@ -294,8 +349,18 @@ function CategoryGroup({
       </button>
 
       {/* Expanded content */}
-      {expanded && hasContent && (
-        <div className={`${depth > 0 ? 'ms-2.5' : ''}`} role="group" aria-label={category.name}>
+      {hasContent && (
+        <div id={groupId} hidden={!expanded} className={`${depth > 0 ? 'ms-2.5' : ''}`} role="group" aria-label={category.name}>
+          {/* [DOCS-NAV-DETAILS 2026-10-08 by Codex] Overview retains the CMS category URL. */}
+          <Link
+            href={`${languagePathPrefix(currentLanguage)}/${category.slug}`}
+            aria-current={isCurrentCategory ? 'page' : undefined}
+            className={`ms-[21px] my-1 block rounded-md px-2.5 py-[7px] text-[12px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${
+              isCurrentCategory ? 'bg-primary/[0.1] text-primary-200' : 'text-white/40 hover:bg-white/[0.025] hover:text-white/65'
+            }`}
+          >
+            {navigationOverviewLabel(currentLanguage)}
+          </Link>
           {/* [DOCS-NAVIGATION 2026-10-08 by Codex] Guides precede console subgroups. */}
           {/* Articles in this category */}
           {hasArticles && (
@@ -318,6 +383,7 @@ function CategoryGroup({
                 key={child.id || child.slug}
                 category={child}
                 currentSlug={currentSlug}
+                currentCategorySlug={currentCategorySlug}
                 currentLanguage={currentLanguage}
                 depth={depth + 1}
               />
@@ -337,7 +403,7 @@ function ArticleLink({ article, categorySlug, currentLanguage, isActive }) {
     <Link
       href={articleHref(article, currentLanguage, categorySlug)}
       className={`
-        block px-2.5 py-[7px] rounded-md text-[13px] leading-[1.35rem] transition-all
+        block px-2.5 py-[7px] rounded-md text-[13px] leading-[1.35rem] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary transition-all
         ${
           isActive
             ? 'bg-primary/[0.1] text-primary-200 font-medium'

@@ -4,6 +4,11 @@
  * ============================================
  * Creation Reason: Documentation homepage / landing page
  * Modification Reason:
+ *   v1.4.0 - [DOCS-POLISH 2026-10-09 by Claude] The home page is a map:
+ *     three primary entry points (understand, build, run a node) with their
+ *     articles, then the other sections. Removed entrance animations (the
+ *     server-rendered page started at opacity 0) and the recommended-reading
+ *     grid that repeated the same pages.
  *   v1.3.0 - [DOCS-NAVIGATION 2026-10-08 by Codex] Expose the chat guide
  *     in every available language and align home cards with reader sections.
  *   v1.2.1 - [DOCS-HOME-SEO-I18N 2026-10-07 by Codex] Add language
@@ -20,35 +25,33 @@
  *   added subtle grid pattern background for "wow factor"
  *
  * Main Logical Flow:
- *   1. getServerSideProps fetches siteConfig + categoryTree + recent articles
- *   2. Renders an unframed protocol introduction and two canonical entry links
- *   3. Shows the ordered recommended reading path
- *   4. Shows compact category navigation for the complete documentation set
+ *   1. getServerSideProps fetches siteConfig + the localized category tree
+ *   2. Renders the hero from SiteConfig
+ *   3. Shows three entry cards (intro, developers, node-operators), each
+ *      listing its first articles in navigation order
+ *   4. Shows the remaining sections as compact category cards
  *
  * Dependencies:
- *   - lib/api.js (fetchSiteConfig, fetchCategoryTree, fetchArticleList)
+ *   - lib/api.js (fetchSiteConfig, fetchCategoryTree, navigation helpers)
  *   - components/Layout.js
- *   - framer-motion (entrance animations)
  *   - lucide-react (icons)
  *
  * ⚠️ Important Note for Next Developer:
- * - Article cards link to /[category_slug]/[article_slug]
- * - Category cards link to first article or category index
+ * - Entry and category cards link to /[category_slug] and
+ *   /[category_slug]/[article_slug]; ordering comes from the navigation tree
  * - getServerSideProps handles both paginated & raw API responses
  *
- * Last Modified: v1.3.0 - First-class localized developer integration entry
+ * Last Modified: v1.4.0 - Static entry-point map, no entrance animations
  * ============================================
  */
 
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import {
   ArrowRight,
   Braces,
   CircleHelp,
   Compass,
   FileText,
-  KeyRound,
   Network,
   Search,
   Server,
@@ -61,37 +64,32 @@ import {
   documentationAlternates,
   fetchSiteConfig,
   fetchCategoryTree,
-  fetchArticleList,
   getUiCopy,
   languagePathPrefix,
-  navigationArticleContext,
   navigationArticles,
   findNavigationCategory,
-  navigationCategoryName,
 } from '../lib/api';
 
 export default function DocsHome({
   siteConfig,
   categoryTree,
-  developerChatArticle,
-  recentArticles,
   currentLanguage = DEFAULT_LANGUAGE,
 }) {
   const copy = getUiCopy(currentLanguage);
   const docsBaseUrl = (siteConfig?.docs_base_url || 'https://docs.aeronyx.network').replace(/\/+$/, '');
   const canonicalUrl = `${docsBaseUrl}${languagePathPrefix(currentLanguage) || '/'}`;
-  // [DOCS-ARTICLE-RETIREMENT 2026-10-09 by Codex] Keep a useful introduction
-  // when a locale's historical node snapshot has been unpublished in the CMS.
-  const primaryArticle = recentArticles?.find(
-    (article) => (article.translation_key || article.slug) === 'what-is-aeronyx'
-  ) || recentArticles?.find(
-    (article) => (article.translation_key || article.slug) === 'aeronyx-app-and-protocol-architecture'
+  // [DOCS-POLISH 2026-10-09 by Claude] The home page is a map, not a feed:
+  // three primary entry points (understand, build, run a node) list their
+  // own articles, and every other section follows. It replaces the hero
+  // links, the developer banner and the "recommended reading" grid, which
+  // repeated the same pages up to three times. Nothing animates in: content
+  // is visible in the server-rendered HTML.
+  const primary = PRIMARY_SECTIONS
+    .map((slug) => findNavigationCategory(categoryTree, slug))
+    .filter(Boolean);
+  const secondary = (categoryTree || []).filter(
+    (category) => !PRIMARY_SECTIONS.includes(category.slug)
   );
-  const memChainArticle = recentArticles?.find(
-    (article) => (article.translation_key || article.slug) === 'memory-chain-and-encrypted-storage'
-  );
-  // [DOCS-NAVIGATION 2026-10-08 by Codex] The integration guide is a
-  // first-class destination, independent of the time-ordered article grid.
 
   return (
     <Layout
@@ -108,13 +106,8 @@ export default function DocsHome({
     >
       <div className="max-w-5xl mx-auto px-5 sm:px-7 py-10 sm:py-14 lg:py-16">
 
-        {/* ===== Hero Section ===== */}
-        <motion.section
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-16 sm:mb-20 max-w-3xl"
-        >
+        {/* ===== Hero ===== */}
+        <section className="mb-12 sm:mb-16 max-w-3xl">
           <div className="inline-flex items-center gap-2 mb-6 text-[11px] font-medium text-white/45 tracking-wider uppercase">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
             {siteConfig?.badge_label || copy.officialDocumentation}
@@ -127,127 +120,36 @@ export default function DocsHome({
             </span>
           </h1>
 
-          <p className="text-[15px] sm:text-[17px] text-white/45 max-w-2xl leading-[1.75]">
-            {siteConfig?.hero_description ||
-              copy.documentationDescription}
+          <p className="text-[15px] sm:text-[17px] text-white/55 max-w-2xl leading-[1.75]">
+            {siteConfig?.hero_description || copy.documentationDescription}
           </p>
+        </section>
 
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 mt-8">
-            {primaryArticle && (
-              <Link
-                href={articleHref(primaryArticle, currentLanguage)}
-                className="group inline-flex items-center gap-2 text-sm font-medium text-white/85 hover:text-white transition-colors"
-              >
-                {primaryArticle.title}
-                <ArrowRight size={14} className="text-primary group-hover:translate-x-0.5 transition-transform" />
-              </Link>
-            )}
-            {memChainArticle && (
-              <Link
-                href={articleHref(memChainArticle, currentLanguage)}
-                className="group inline-flex items-center gap-2 text-sm text-white/40 hover:text-white/70 transition-colors"
-              >
-                {memChainArticle.title}
-                <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
-              </Link>
-            )}
-          </div>
-        </motion.section>
-
-        {/* ===== Developer integration ===== */}
-        {developerChatArticle && (
-          <motion.section
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.08 }}
-            className="mb-16 border-y border-primary/20 bg-primary/[0.035] sm:mb-20"
-          >
-            <Link
-              href={articleHref(developerChatArticle, currentLanguage)}
-              className="group grid gap-5 px-1 py-7 sm:grid-cols-[auto_1fr_auto] sm:items-center"
-            >
-              <span className="flex h-11 w-11 items-center justify-center rounded-lg border border-primary/20 bg-primary/[0.08] text-primary">
-                <KeyRound size={20} aria-hidden="true" />
-              </span>
-              <span className="min-w-0">
-                <span className="mb-2 block text-[11px] font-semibold uppercase tracking-wider text-primary-300">
-                  {navigationCategoryName('developers', currentLanguage)}
-                </span>
-                <span className="block text-lg font-medium text-white/90 transition-colors group-hover:text-white">
-                  {developerChatArticle.title}
-                </span>
-                {developerChatArticle.summary && (
-                  <span className="mt-2 block max-w-2xl text-[13px] leading-relaxed text-white/40">
-                    {developerChatArticle.summary}
-                  </span>
-                )}
-              </span>
-              <span className="inline-flex items-center gap-2 text-sm font-medium text-primary-300">
-                {copy.open}
-                <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
-              </span>
-            </Link>
-          </motion.section>
+        {/* ===== Primary entry points ===== */}
+        {primary.length > 0 && (
+          <section className="mb-14 sm:mb-16 grid gap-4 lg:grid-cols-3">
+            {primary.map((category) => (
+              <EntryCard key={category.slug} category={category} currentLanguage={currentLanguage} />
+            ))}
+          </section>
         )}
 
-        {/* ===== Recent Articles ===== */}
-        {recentArticles && recentArticles.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="mb-16 sm:mb-20"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider">
-                {copy.recentArticles}
-              </h2>
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-px overflow-hidden rounded-lg border border-white/[0.07] bg-white/[0.07]">
-              {recentArticles.map((article, i) => (
-                <motion.div
-                  key={article.id}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.15 + i * 0.05 }}
-                >
-                  <ArticleCard article={article} categoryTree={categoryTree} currentLanguage={currentLanguage} index={i} />
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* ===== Category Overview ===== */}
-        {categoryTree && categoryTree.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider mb-6">
+        {/* ===== Everything else ===== */}
+        {secondary.length > 0 && (
+          <section>
+            <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider mb-5">
               {copy.browseByCategory}
             </h2>
-
-            <div className="grid sm:grid-cols-2 gap-3">
-              {categoryTree.map((cat, i) => (
-                <motion.div
-                  key={cat.id || cat.slug}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.25 + i * 0.05 }}
-                >
-                  <CategoryCard category={cat} currentLanguage={currentLanguage} />
-                </motion.div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {secondary.map((category) => (
+                <CategoryCard key={category.id || category.slug} category={category} currentLanguage={currentLanguage} />
               ))}
             </div>
-          </motion.div>
+          </section>
         )}
 
         {/* ===== Empty state ===== */}
-        {(!categoryTree || categoryTree.length === 0) &&
-         (!recentArticles || recentArticles.length === 0) && (
+        {(!categoryTree || categoryTree.length === 0) && (
           <div className="text-center py-24">
             <div className="w-16 h-16 mx-auto mb-5 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
               <Search size={24} className="text-white/15" />
@@ -265,54 +167,67 @@ export default function DocsHome({
   );
 }
 
+const PRIMARY_SECTIONS = ['intro', 'developers', 'node-operators'];
+const SECTION_ICONS = {
+  intro: Compass,
+  developers: Braces,
+  'node-operators': Server,
+  network: Network,
+  faq: CircleHelp,
+  articles: ShieldCheck,
+};
+const ENTRY_ARTICLE_LIMIT = 4;
+
 // ============================================
 // Sub-components
 // ============================================
 
-function ArticleCard({ article, categoryTree, currentLanguage, index }) {
-  const sectionName = navigationArticleContext(categoryTree, article)?.section.name || article.category_name;
-  const href = articleHref(article, currentLanguage);
+function EntryCard({ category, currentLanguage }) {
+  const copy = getUiCopy(currentLanguage);
+  const Icon = SECTION_ICONS[category.slug] || FileText;
+  const articles = navigationArticles(category);
+  const sectionHref = `${languagePathPrefix(currentLanguage)}/${category.slug}`;
 
   return (
-    <Link
-      href={href}
-      className="group block min-h-[154px] p-5 sm:p-6 bg-[#0b0b0e]
-        hover:bg-[#101014] transition-colors duration-200"
-    >
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-[11px] text-white/20 font-mono tabular-nums">
-          {String(index + 1).padStart(2, '0')}
+    <div className="flex flex-col rounded-lg border border-white/[0.08] bg-white/[0.015] p-5 sm:p-6">
+      <Link href={sectionHref} className="group mb-4 block">
+        <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-primary/20 bg-primary/[0.08] text-primary">
+          <Icon size={18} aria-hidden="true" />
         </span>
-        {sectionName && (
-          <span className="text-[10px] text-primary/60 uppercase tracking-wider">
-            {sectionName}
-          </span>
+        <h2 className="text-[17px] font-medium text-white/90 group-hover:text-white transition-colors">
+          {category.name}
+        </h2>
+        {category.description && (
+          <p className="mt-1.5 text-[13px] leading-relaxed text-white/45">{category.description}</p>
         )}
-      </div>
-      <h3 className="text-[15px] font-medium text-white/80 group-hover:text-white mb-2 transition-colors leading-snug">
-        {article.title}
-      </h3>
-      {article.summary && (
-        <p className="text-[13px] text-white/35 line-clamp-2 leading-relaxed">
-          {article.summary}
-        </p>
-      )}
-    </Link>
+      </Link>
+      <ul className="mb-4 space-y-1.5 border-t border-white/[0.06] pt-4">
+        {articles.slice(0, ENTRY_ARTICLE_LIMIT).map((article) => (
+          <li key={article.id || article.slug}>
+            <Link
+              href={articleHref(article, currentLanguage, category.slug)}
+              className="block text-[13.5px] leading-snug text-white/70 hover:text-white transition-colors"
+            >
+              {article.title}
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <Link
+        href={sectionHref}
+        className="group mt-auto inline-flex items-center gap-1.5 text-[12px] text-primary-300 hover:text-primary-200"
+      >
+        {copy.articleCount(articles.length)}
+        <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+      </Link>
+    </div>
   );
 }
 
 function CategoryCard({ category, currentLanguage }) {
   const copy = getUiCopy(currentLanguage);
   const href = `${languagePathPrefix(currentLanguage)}/${category.slug}`;
-  const iconMap = {
-    intro: Compass,
-    developers: Braces,
-    'node-operators': Server,
-    network: Network,
-    faq: CircleHelp,
-    articles: ShieldCheck,
-  };
-  const CategoryIcon = iconMap[category.slug] || FileText;
+  const CategoryIcon = SECTION_ICONS[category.slug] || FileText;
   const count = category.article_count || category.articles?.length || 0;
 
   return (
@@ -323,23 +238,23 @@ function CategoryCard({ category, currentLanguage }) {
         transition-all duration-200"
     >
       <div className="flex items-center gap-3 mb-2.5">
-        <CategoryIcon size={17} className="text-white/30 group-hover:text-primary/70 transition-colors" />
+        <CategoryIcon size={17} className="text-white/45 group-hover:text-primary/70 transition-colors" />
         <h3 className="text-[14px] font-medium text-white/75 group-hover:text-white transition-colors">
           {category.name}
         </h3>
       </div>
       {category.description && (
-        <p className="text-[12px] text-white/25 line-clamp-2 mb-3 leading-relaxed">
+        <p className="text-[12.5px] text-white/45 line-clamp-2 mb-3 leading-relaxed">
           {category.description}
         </p>
       )}
       <div className="flex items-center justify-between">
-        <span className="text-[11px] text-white/15 tabular-nums">
+        <span className="text-[11px] text-white/35 tabular-nums">
           {copy.articleCount(count)}
         </span>
         <ArrowRight
           size={13}
-          className="text-white/10 group-hover:text-primary/60 group-hover:translate-x-0.5 transition-all"
+          className="text-white/25 group-hover:text-primary/70 group-hover:translate-x-0.5 transition-all"
         />
       </div>
     </Link>
@@ -351,32 +266,15 @@ function CategoryCard({ category, currentLanguage }) {
 // ============================================
 
 export async function getDocsHomeProps(lang = DEFAULT_LANGUAGE) {
-  const [siteConfig, categoryTree, articleData] = await Promise.all([
+  const [siteConfig, categoryTree] = await Promise.all([
     fetchSiteConfig({ lang }),
     fetchCategoryTree({ lang }),
-    fetchArticleList({ lang }),
   ]);
-
-  // Handle paginated response ({ results, count, ... }) or raw array
-  const raw = articleData?.results || articleData;
-  const publishedArticles = Array.isArray(raw) ? raw : [];
-  // [DOCS-NAVIGATION 2026-10-08 by Codex] Prefer the published guide in this
-  // locale, not an untranslated English API. The tree keeps the entry usable
-  // when the separate recent-article request fails or its first page changes.
-  const developerArticles = navigationArticles(findNavigationCategory(categoryTree, 'developers'));
-  const entry = developerArticles[0];
-  const developerChatArticle = entry
-    ? { ...publishedArticles.find((article) => article.id === entry.id), ...entry } : null;
-  const recentArticles = publishedArticles
-    .filter((article) => article.id !== developerChatArticle?.id)
-    .slice(0, 6);
 
   return {
     props: {
       siteConfig: siteConfig || null,
       categoryTree: categoryTree || [],
-      developerChatArticle,
-      recentArticles,
       currentLanguage: lang,
     },
   };

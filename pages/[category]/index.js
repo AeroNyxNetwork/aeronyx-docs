@@ -39,8 +39,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { motion } from 'framer-motion';
-import { ArrowRight, Clock, Eye, FileText } from 'lucide-react';
+import { ArrowRight, Clock, FileText } from 'lucide-react';
 import Layout from '../../components/Layout';
 import DocsHome, { getDocsHomeProps } from '../index';
 import {
@@ -130,12 +129,9 @@ export default function CategoryPage({
         </div>
 
         {/* Category header */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="mb-8"
-        >
+        {/* [DOCS-POLISH 2026-10-09 by Claude] No entrance animation: the
+            server-rendered list must be visible before hydration. */}
+        <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-2xl sm:text-3xl font-semibold text-white/90">{title}</h1>
             {count > 0 && (
@@ -145,22 +141,17 @@ export default function CategoryPage({
             )}
           </div>
           {categoryInfo?.description && (
-            <p className="text-[14px] text-white/35 max-w-2xl leading-relaxed">
+            <p className="text-[14px] text-white/50 max-w-2xl leading-relaxed">
               {categoryInfo.description}
             </p>
           )}
-        </motion.div>
+        </div>
 
         {/* Article list */}
         {articles && articles.length > 0 ? (
           <div className="space-y-2">
-            {articles.map((article, i) => (
-              <motion.div
-                key={article.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: i * 0.04 }}
-              >
+            {articles.map((article) => (
+              <div key={article.id}>
                 <Link
                   href={articleHref(article, currentLanguage, categorySlug)}
                   className="group flex items-center justify-between p-4 rounded-lg
@@ -173,33 +164,31 @@ export default function CategoryPage({
                       {article.title}
                     </h3>
                     {article.summary && (
-                      <p className="text-[13px] text-white/25 truncate mt-1">
+                      <p className="text-[13px] text-white/45 truncate mt-1">
                         {article.summary}
                       </p>
                     )}
-                    <div className="flex items-center gap-3 mt-2 text-[11px] text-white/15">
-                      {article.published_at && (
-                        <span className="flex items-center gap-1">
+                    <div className="flex items-center gap-3 mt-2 text-[11px] text-white/35">
+                      {/* [DOCS-POLISH 2026-10-09 by Claude] Last update, no view counts. */}
+                      {(article.updated_at || article.published_at) && (
+                        <time
+                          className="flex items-center gap-1"
+                          dateTime={article.updated_at || article.published_at}
+                        >
                           <Clock size={10} />
-                          {new Date(article.published_at).toLocaleDateString(locale, {
-                            month: 'short', day: 'numeric',
-                          })}
-                        </span>
-                      )}
-                      {article.view_count > 0 && (
-                        <span className="flex items-center gap-1">
-                          <Eye size={10} />
-                          {copy.views(article.view_count)}
-                        </span>
+                          {copy.updatedOn(new Date(article.updated_at || article.published_at).toLocaleDateString(locale, {
+                            year: 'numeric', month: 'short', day: 'numeric',
+                          }))}
+                        </time>
                       )}
                     </div>
                   </div>
                   <ArrowRight
                     size={15}
-                    className="flex-shrink-0 ml-4 text-white/[0.06] group-hover:text-primary/50 group-hover:translate-x-0.5 transition-all"
+                    className="flex-shrink-0 ms-4 text-white/20 group-hover:text-primary/50 group-hover:translate-x-0.5 transition-all"
                   />
                 </Link>
-              </motion.div>
+              </div>
             ))}
           </div>
         ) : (

@@ -57,7 +57,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Clock, Eye, User, ChevronLeft, ChevronRight, BookOpen, FileText } from 'lucide-react';
+import { Clock, User, ChevronLeft, ChevronRight, BookOpen, FileText } from 'lucide-react';
 import Layout from '../../components/Layout';
 import CategoryPage, { getCategoryPageProps } from './index';
 import MarkdownRenderer, { extractTOC } from '../../components/MarkdownRenderer';
@@ -873,24 +873,24 @@ export default function ArticlePage({
                 {article.author_name}
               </span>
             )}
-            {article.published_at && (
-              <span className="flex items-center gap-1.5">
+            {/* [DOCS-POLISH 2026-10-09 by Claude] Readers judge freshness by
+                the last update, not the first publication; view counts
+                include crawler traffic and are not shown. */}
+            {(article.updated_at || article.published_at) && (
+              <time
+                className="flex items-center gap-1.5"
+                dateTime={article.updated_at || article.published_at}
+              >
                 <Clock size={11} />
-                {new Date(article.published_at).toLocaleDateString(locale, {
+                {copy.updatedOn(new Date(article.updated_at || article.published_at).toLocaleDateString(locale, {
                   year: 'numeric', month: 'long', day: 'numeric',
-                })}
-              </span>
+                }))}
+              </time>
             )}
             {readTime > 0 && (
               <span className="flex items-center gap-1.5">
                 <BookOpen size={11} />
                 {copy.minRead(readTime)}
-              </span>
-            )}
-            {article.view_count > 0 && (
-              <span className="flex items-center gap-1.5">
-                <Eye size={11} />
-                {copy.views(article.view_count)}
               </span>
             )}
           </div>

@@ -4,6 +4,9 @@
  * ============================================
  * Creation Reason: Article detail page with full Markdown rendering
  * Modification Reason:
+ *   v1.2.1 - [DOCS-GEO-FAQ 2026-10-09 by Claude] Emit FAQPage JSON-LD for
+ *     CMS sections wrapped in faq:start/faq:end markers; the chat prompt
+ *     builder also cites the Central Chat HTTPS API reference.
  *   v1.2.0 - [DOCS-NAVIGATION 2026-10-08 by Codex] Align breadcrumbs and
  *     reading order with shared sections while preserving canonical URLs.
  *   v1.1.7 - [DOCS-CHAT-AI-PROMPT 2026-10-08 by Codex] Add a local-only,
@@ -46,7 +49,7 @@
  * - BUG FIX: prev/next links now use article.category_slug (from API)
  *   instead of the URL categorySlug param, since articles might change category
  *
- * Last Modified: v1.2.0 - Reader sections with stable canonical routes
+ * Last Modified: v1.2.1 - FAQPage structured data from marked FAQ sections
  * ============================================
  */
 
@@ -113,6 +116,40 @@ function summaryRepeatsFirstParagraph(content, summary) {
 
 // [DOCS-CHAT-AI-PROMPT 2026-10-08 by Codex] Static, translated task context.
 // No repository content, credentials or user text is sent to a model.
+// [DOCS-GEO-FAQ 2026-10-09 by Claude] FAQ sections are wrapped in
+// `<!-- faq:start -->` / `<!-- faq:end -->` in the CMS, in every language.
+// Each `### ` heading inside is a question and the text up to the next
+// heading is its answer. The markers survive translation, so FAQPage
+// structured data works for all locales without per-language heading rules.
+const FAQ_BLOCK = /<!--\s*faq:start\s*-->([\s\S]*?)<!--\s*faq:end\s*-->/;
+const FAQ_ANSWER_MAX = 1200;
+
+function markdownToPlainText(markdown) {
+  return String(markdown || '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, '$1')
+    .replace(/^\s*[-*+]\s+/gm, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function extractFaqEntries(content) {
+  const block = FAQ_BLOCK.exec(String(content || ''));
+  if (!block) return [];
+  const entries = [];
+  const parts = block[1].split(/^###\s+/m).slice(1);
+  for (const part of parts) {
+    const newline = part.indexOf('\n');
+    const question = markdownToPlainText(newline === -1 ? part : part.slice(0, newline));
+    const answer = markdownToPlainText(newline === -1 ? '' : part.slice(newline + 1))
+      .slice(0, FAQ_ANSWER_MAX);
+    if (question && answer) entries.push({ question, answer });
+  }
+  return entries;
+}
+
 const CHAT_INTEGRATION_PROMPT_COPY = {
   "en": {
     "title": "Build an integration prompt",
@@ -445,6 +482,8 @@ export function buildChatIntegrationPrompt({ language = DEFAULT_LANGUAGE, stack 
   const prefix = languagePathPrefix(lang);
   const references = [
     '/network/aeronyx-chat-relay-client-integration',
+    // [DOCS-GEO-FAQ 2026-10-09 by Claude] Envelope format and golden vector.
+    '/developers/central-chat-https-api-v1',
     '/intro/aeronyx-app-and-protocol-architecture',
     '/network/node-discovery-and-relay-foundation',
   ].map((path) => `https://docs.aeronyx.network${prefix}${path}`);
@@ -709,6 +748,18 @@ export default function ArticlePage({
     mainEntityOfPage: canonicalUrl,
     url: canonicalUrl,
   };
+  const faqEntries = extractFaqEntries(article.content);
+  const faqJsonLd = faqEntries.length ? {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    inLanguage: currentLanguage,
+    url: canonicalUrl,
+    mainEntity: faqEntries.map(({ question, answer }) => ({
+      '@type': 'Question',
+      name: question,
+      acceptedAnswer: { '@type': 'Answer', text: answer },
+    })),
+  } : null;
 
   return (
     <Layout
@@ -752,6 +803,12 @@ export default function ArticlePage({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
         />
+        {faqJsonLd && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+          />
+        )}
       </Head>
 
       {/* Reading progress bar */}

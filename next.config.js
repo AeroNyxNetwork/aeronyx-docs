@@ -20,10 +20,28 @@
  * - redirects() preserves public links used by website CTAs, search engines,
  *   and AI crawler summaries.
  *
- * Last Modified: v1.1.0 - Legacy docs URL redirects
+ *   v1.2.0 - [DOCS-IA-CMS 2026-10-09 by Claude] Redirects for merged pages
+ *     and pages that moved section, in every locale.
+ *
+ * Last Modified: v1.2.0 - Information-architecture redirects
  * Previous: v1.0.0 - Initial creation
  * ============================================
  */
+
+const LOCALE_PREFIXES = 'zh-Hans|zh-Hant|ja|ko|ru|es|pt-BR|ar|tr|vi|id|fr';
+const DOCS_IA_REDIRECTS = [
+  // Merged into the install guide.
+  ['/node-operators/install-register-rust-vpn-node', '/node-operators/install-register-rust-privacy-protocol-node'],
+  ['/node-operators/ai-assisted-node-deployment-standard', '/node-operators/install-register-rust-privacy-protocol-node'],
+  // Nodeboard pages are one guide under Node operators.
+  ['/nodeboard/nodeboard-features-reference', '/node-operators/nodeboard-operator-console-guide'],
+  ['/nodeboard/nodeboard-operator-console-guide', '/node-operators/nodeboard-operator-console-guide'],
+  ['/nodeboard', '/node-operators'],
+  // Moved to the section their readers look in.
+  ['/network/aeronyx-chat-relay-client-integration', '/developers/aeronyx-chat-relay-client-integration'],
+  ['/network/aeronyx-privacy-network-vs-traditional-vpn', '/intro/aeronyx-privacy-network-vs-traditional-vpn'],
+  ['/network/network-stats-and-privacy-boundary', '/node-operators/network-stats-and-privacy-boundary'],
+];
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -33,13 +51,18 @@ const nextConfig = {
   // from whitepaper/developer labels to protocol-first pages.
   async redirects() {
     return [
+      // [DOCS-IA-CMS 2026-10-09 by Claude] Pages that were merged or changed
+      // section keep their old URLs, in every locale.
+      ...DOCS_IA_REDIRECTS.flatMap(([source, destination]) => [
+        { source, destination, permanent: true },
+        {
+          source: `/:lang(${LOCALE_PREFIXES})${source}`,
+          destination: `/:lang${destination}`,
+          permanent: true,
+        },
+      ]),
       // [DOCS-ARTICLE-RETIREMENT 2026-10-09 by Codex] Retire the outdated
       // Simplified Chinese snapshot without breaking bookmarks or other locales.
-      {
-        source: '/zh-Hans/intro/what-is-aeronyx',
-        destination: '/zh-Hans/intro',
-        permanent: true,
-      },
       {
         source: '/aeronyx-whitepaper/technical-white-paper',
         destination: '/intro/aeronyx-app-and-protocol-architecture',

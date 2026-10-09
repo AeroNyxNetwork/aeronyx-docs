@@ -76,6 +76,10 @@ export default function DocsHome({
   currentLanguage = DEFAULT_LANGUAGE,
 }) {
   const copy = getUiCopy(currentLanguage);
+  // [DOCS-POLISH 2026-10-09 by Claude] SiteConfig holds one English copy of
+  // the hero and SEO text. Other locales use their translated UI copy, so a
+  // Japanese or Arabic home page no longer opens with an English headline.
+  const siteCopy = currentLanguage === DEFAULT_LANGUAGE ? siteConfig : null;
   const docsBaseUrl = (siteConfig?.docs_base_url || 'https://docs.aeronyx.network').replace(/\/+$/, '');
   const canonicalUrl = `${docsBaseUrl}${languagePathPrefix(currentLanguage) || '/'}`;
   // [DOCS-POLISH 2026-10-09 by Claude] The home page is a map, not a feed:
@@ -95,10 +99,10 @@ export default function DocsHome({
     <Layout
       categoryTree={categoryTree}
       siteConfig={siteConfig}
-      title={siteConfig?.seo_title || copy.protocolDocumentation}
-      description={siteConfig?.seo_description || copy.documentationDescription}
+      title={siteCopy?.seo_title || copy.protocolDocumentation}
+      description={siteCopy?.seo_description || copy.documentationDescription}
       meta={{
-        keywords: siteConfig?.seo_keywords,
+        keywords: siteCopy?.seo_keywords,
         canonical: canonicalUrl,
         alternates: documentationAlternates('/', docsBaseUrl),
       }}
@@ -110,18 +114,18 @@ export default function DocsHome({
         <section className="mb-12 sm:mb-16 max-w-3xl">
           <div className="inline-flex items-center gap-2 mb-6 text-[11px] font-medium text-white/45 tracking-wider uppercase">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
-            {siteConfig?.badge_label || copy.officialDocumentation}
+            {siteCopy?.badge_label || copy.officialDocumentation}
           </div>
 
           <h1 className="text-[2.15rem] sm:text-[3rem] lg:text-[3.5rem] font-semibold mb-5 text-white/95 leading-[1.08]">
             {siteConfig?.hero_title || 'AeroNyx'}{' '}
             <span className="text-white/45">
-              {siteConfig?.hero_highlight || copy.protocolDocumentation}
+              {siteCopy?.hero_highlight || copy.protocolDocumentation}
             </span>
           </h1>
 
           <p className="text-[15px] sm:text-[17px] text-white/55 max-w-2xl leading-[1.75]">
-            {siteConfig?.hero_description || copy.documentationDescription}
+            {siteCopy?.hero_description || copy.documentationDescription}
           </p>
         </section>
 
